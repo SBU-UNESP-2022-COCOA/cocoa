@@ -13,7 +13,8 @@ import os
 import shutil
 import clik.hpy as hpy
 
-# clik_change_lrange_TTTEEE.py 35 650 
+#plik_rd12_HM_v22b_TTTEEE_35_648.clik
+# $PYTHON3 clik_change_lrange_TTTEEE.py ../../../../../../../data/planck/plc_3.0/hi_l/plik/plik_rd12_HM_v22b_TTTEEE.clik 35 650 ../../../../../../../data/planck/plc_3.0/hi_l/plik/plik_rd12_HM_v22b_TTTEEE_35_650.clik
 
 def change_gibbs_gauss(inhf,lklfile,outfile,lmin,lmax):
   olmin = inhf["clik/lkl_0/lmin"]
