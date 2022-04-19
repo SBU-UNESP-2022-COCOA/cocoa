@@ -101,6 +101,9 @@ typedef struct
   //double w0;
   //double A_s;
   //double n_s;
+  // VM BEGINS (GROWTH)
+  double Omega_m_growth;
+  // VM ENDS (GROWTH)
   int is_cached;
 } cosmopara;
 

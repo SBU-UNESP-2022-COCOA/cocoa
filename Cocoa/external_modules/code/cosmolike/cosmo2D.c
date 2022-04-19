@@ -2068,14 +2068,15 @@ double w_ks_tomo_flatsky(const double theta, const int ni, const int limber)
 // NLA/TA amplitude C1, nz argument only need if per-bin amplitude
 double C1_TA(double a, double nz, double growfac_a)
 {
+  const double OMM = cosmology.Omega_m_growth;
+  
   // per-bin IA parameters
   if (like.IA == 3 || like.IA == 5)
   {
-    return -nuisance.A_z[(int)nz]*cosmology.Omega_m*nuisance.c1rhocrit_ia/ growfac_a;
+    return -nuisance.A_z[(int)nz]*OMM*nuisance.c1rhocrit_ia/ growfac_a;
   }
   // power law evolution
-  return -cosmology.Omega_m * nuisance.c1rhocrit_ia /
-         growfac_a * nuisance.A_ia *
+  return -OMM * nuisance.c1rhocrit_ia / growfac_a * nuisance.A_ia *
          pow(1. / (a * nuisance.oneplusz0_ia), nuisance.eta_ia);
 }
 
@@ -2093,16 +2094,16 @@ double b_TA(double a __attribute__((unused)), double nz)
 // TT amplitude C2, nz argument only need if per-bin amplitude
 double C2_TT(double a, double nz, double growfac_a)
 {
+  const double OMM = cosmology.Omega_m_growth;
+
   // per-bin IA parameters
   if (like.IA == 5)
   {
-    return 5. * nuisance.A2_z[(int)nz] * cosmology.Omega_m *
-           nuisance.c1rhocrit_ia * pow(1.0/growfac_a, 2.0);
+    return 5.0 * nuisance.A2_z[(int)nz] * OMM * nuisance.c1rhocrit_ia * pow(1.0/growfac_a, 2.0);
   }
   // power law evolution
-  return 5. * nuisance.A2_ia * cosmology.Omega_m * nuisance.c1rhocrit_ia *
-         (1.0 /(growfac_a*growfac_a)) *
-         pow(1. / (a * nuisance.oneplusz0_ia), nuisance.eta_ia_tt);
+  return 5.0 * nuisance.A2_ia * OMM * nuisance.c1rhocrit_ia * (1.0 /(growfac_a*growfac_a)) *
+    pow(1.0 / (a * nuisance.oneplusz0_ia), nuisance.eta_ia_tt);
 }
 
 double int_for_C_ss_tomo_TATT_EE_limber(double a, void* params)
@@ -2496,7 +2497,8 @@ double int_for_C_ss_tomo_limber(double a, void* params)
     }
     case 1:
     {
-      const double norm = A_IA_Joachimi(a)*cosmology.Omega_m*nuisance.c1rhocrit_ia/growfac_a;
+      const double OMM = cosmology.Omega_m_growth;
+      const double norm = A_IA_Joachimi(a)*OMM*nuisance.c1rhocrit_ia/growfac_a;
 
       res = ws1*ws2*norm*norm - (ws1*wk2+ws2*wk1)*norm + wk1*wk2;
 
@@ -2504,7 +2506,8 @@ double int_for_C_ss_tomo_limber(double a, void* params)
     }
     case 3:
     {
-      const double norm = cosmology.Omega_m*nuisance.c1rhocrit_ia/growfac_a;
+      const double OMM = cosmology.Omega_m_growth;
+      const double norm = OMM*nuisance.c1rhocrit_ia/growfac_a;
 
       res = ws1*ws2*norm*norm - (ws1*wk2+ws2*wk1)*norm + wk1*wk2;
 
@@ -2512,8 +2515,9 @@ double int_for_C_ss_tomo_limber(double a, void* params)
     }
     case 4:
     {
-      const double norm = cosmology.Omega_m*nuisance.c1rhocrit_ia/growfac_a*
-        nuisance.A_ia*pow(1./(a*nuisance.oneplusz0_ia), nuisance.eta_ia);
+      const double OMM = cosmology.Omega_m_growth;
+      const double norm = OMM*nuisance.c1rhocrit_ia/growfac_a*
+        nuisance.A_ia*pow(1.0/(a*nuisance.oneplusz0_ia), nuisance.eta_ia);
 
       res = ws1*ws2*norm*norm - (ws1*wk2+ws2*wk1)*norm + wk1*wk2;
 
@@ -2734,7 +2738,8 @@ double int_for_C_gs_tomo_limber(double a, void* params)
     }
     case 1:
     {
-      const double norm = A_IA_Joachimi(a)*cosmology.Omega_m*nuisance.c1rhocrit_ia/growfac_a;
+      const double OMM = cosmology.Omega_m_growth;
+      const double norm = A_IA_Joachimi(a)*OMM*nuisance.c1rhocrit_ia/growfac_a;
 
       res = (wk - ws*norm);
 
@@ -2742,7 +2747,8 @@ double int_for_C_gs_tomo_limber(double a, void* params)
     }
     case 3:
     {
-      const double norm = nuisance.A_z[ns]*cosmology.Omega_m*nuisance.c1rhocrit_ia/growfac_a;
+      const double OMM = cosmology.Omega_m_growth;
+      const double norm = nuisance.A_z[ns]*OMM*nuisance.c1rhocrit_ia/growfac_a;
 
       res = (wk - ws*norm);
 
@@ -2750,7 +2756,8 @@ double int_for_C_gs_tomo_limber(double a, void* params)
     }
     case 4:
     {
-      const double norm = cosmology.Omega_m*nuisance.c1rhocrit_ia/growfac_a*
+      const double OMM = cosmology.Omega_m_growth;
+      const double norm = OMM*nuisance.c1rhocrit_ia/growfac_a*
         nuisance.A_ia*pow(1./(a*nuisance.oneplusz0_ia),nuisance.eta_ia);
 
       res = (wk - ws*norm);
@@ -2855,8 +2862,8 @@ double int_for_C_gs_tomo_limber_withb2(double a, void* params)
     }
     case 1:
     {
-      const double norm =
-        A_IA_Joachimi(a)*cosmology.Omega_m*nuisance.c1rhocrit_ia/growfac_a;
+      const double OMM = cosmology.Omega_m_growth;
+      const double norm = A_IA_Joachimi(a)*OMM*nuisance.c1rhocrit_ia/growfac_a;
 
       linear_part *= (wk - ws*norm);
       non_linear_part *= (wk - ws*norm);
@@ -2865,8 +2872,8 @@ double int_for_C_gs_tomo_limber_withb2(double a, void* params)
     }
     case 3:
     {
-      const double norm = nuisance.A_z[(int)ar[1]]*cosmology.Omega_m*
-        nuisance.c1rhocrit_ia/growfac_a;
+      const double OMM = cosmology.Omega_m_growth;
+      const double norm = nuisance.A_z[(int)ar[1]]*OMM*nuisance.c1rhocrit_ia/growfac_a;
 
       linear_part *= (wk - ws*norm);
       non_linear_part *= (wk - ws*norm);
@@ -2875,7 +2882,8 @@ double int_for_C_gs_tomo_limber_withb2(double a, void* params)
     }
     case 4:
     {
-      const double norm = cosmology.Omega_m*nuisance.c1rhocrit_ia/growfac_a*
+      const double OMM = cosmology.Omega_m_growth;
+      const double norm = OMM*nuisance.c1rhocrit_ia/growfac_a*
         nuisance.A_ia*pow(1./(a*nuisance.oneplusz0_ia),nuisance.eta_ia);
 
       linear_part *= (wk - ws*norm);
@@ -3659,7 +3667,8 @@ double int_for_C_ks_limber(double a, void* params)
     }
     case 1:
     {
-      const double norm = A_IA_Joachimi(a)*cosmology.Omega_m*nuisance.c1rhocrit_ia/growfac_a;
+      const double OMM = cosmology.Omega_m_growth;
+      const double norm = A_IA_Joachimi(a)*OMM*nuisance.c1rhocrit_ia/growfac_a;
 
       res = (-ws1*wk2*norm + wk1*wk2);
 
@@ -3667,7 +3676,8 @@ double int_for_C_ks_limber(double a, void* params)
     }
     case 3:
     {
-      const double norm = cosmology.Omega_m*nuisance.c1rhocrit_ia/growfac_a;
+      const double OMM = cosmology.Omega_m_growth;
+      const double norm = OMM*nuisance.c1rhocrit_ia/growfac_a;
 
       res = (-ws1*wk2*norm + wk1*wk2);
 
@@ -3675,7 +3685,8 @@ double int_for_C_ks_limber(double a, void* params)
     }
     case 4:
     {
-      const double norm = (cosmology.Omega_m*nuisance.c1rhocrit_ia/growfac_a)*
+      const double OMM = cosmology.Omega_m_growth;
+      const double norm = (OMM*nuisance.c1rhocrit_ia/growfac_a)*
         nuisance.A_ia*pow(1.0/(a*nuisance.oneplusz0_ia), nuisance.eta_ia);
 
       res = (-ws1*wk2*norm + wk1*wk2);
@@ -4214,8 +4225,11 @@ const double zmin, const double zmax)
     struct chis chidchi = chi_all(a);
     const double hoverh0 = hoverh0v2(a, chidchi.dchida);
     const double fK = f_K(chi[i]/real_coverH0);
-    const double norm = cosmology.Omega_m*nuisance.c1rhocrit_ia/growfac(a)*
+
+    const double OMM = cosmology.Omega_m_growth;
+    const double norm = OMM*nuisance.c1rhocrit_ia/growfac(a)*
       nuisance.A_ia*pow(1./(a*nuisance.oneplusz0_ia),nuisance.eta_ia);
+    
     const double tmp1 = W_source(a, (double) nj, hoverh0);
     const double wsource = (tmp1 > 0.) ? tmp1 : 0.;
     fchi[i] = -wsource*norm/fK/(real_coverH0*real_coverH0)*growfac(a); // unit [Mpc^-2]
