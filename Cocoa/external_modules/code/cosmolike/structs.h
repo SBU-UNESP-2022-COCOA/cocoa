@@ -97,11 +97,11 @@ typedef struct
   double rho_crit; // = 3 H_0^2/(8 pi G), critical comoving density
   double MGSigma;
   double MGmu;
+  double Omega_m_growth;
   double random; // Random number between zero and 1 - see interface.cpp
   //double w0;
   //double A_s;
   //double n_s;
-  double Omega_m_growth;
   int is_cached;
 } cosmopara;
 
