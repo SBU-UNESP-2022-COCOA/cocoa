@@ -5,7 +5,7 @@
     2. [Via Docker (best for MacOS/Windows)](#required_packages_docker)
     3. [(expert) Via Cocoa's internal cache](#required_packages_cache)
 3. [Installation of Cobaya base code](#cobaya_base_code)
-4. [Running Cobaya Examples](#cobaya_base_code_examples)
+4. [Running Cobaya Examples](#cobaya_base_code_examples) 
 5. [Running Cosmolike projects](#running_cosmolike_projects)
 6. [Creating Cosmolike projects](#creating_cosmolike_projects)
 7. [Appendix](#appendix)
