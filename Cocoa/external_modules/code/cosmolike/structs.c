@@ -519,6 +519,7 @@ void update_cosmopara(cosmopara *C)
   //C->n_s = cosmology.n_s;  // cluster cosmology need that information
   C->random = cosmology.random;
   C->Omega_m_growth = cosmology.Omega_m_growth;
+  C->sigma_8 = cosmology.sigma_8;
 }
 
 void update_galpara(galpara *G) 
