@@ -10,14 +10,19 @@ module MultiFluidDE
   real(dl) :: grhocrit
   real(dl) :: grhode_today
   real(dl) :: Omega_de
+  real(dl), parameter :: Tpl= sqrt(kappa*hbar/c**5)  ! sqrt(8 pi G hbar/c^5), reduced planck time
+  real(dl), parameter :: units = MPC_in_sec**2 /Tpl**2  ! Convert to units of 1/Mpc^2
 
   type, extends(TDarkEnergyModel) :: TMultiFluidDE
-    real(dl), dimension(max_num_of_fluids * max_num_of_params) :: de_params
+    integer :: DebugLevel
     integer, dimension(max_num_of_fluids) :: models
     ! JVR - TODO go back to a parameter array
-    real(dl) :: w0, wa
-    real(dl) :: zc, fde_zc, wn
-    real(dl) :: grhonode_zc
+    ! JVR - model parameters
+    real(dl) :: w0, wa ! CPL parameters
+    real(dl) :: w1, w2, w3, z1, z2, z3 ! Binned w
+    real(dl) :: zc, fde_zc, theta_i, wn ! Fluid EDE parameters
+    real(dl) :: n, grhonode_zc, freq ! Fluid EDE internal parameters
+    real(dl) :: fac1, fac2, fac3 ! Binned w factors
   contains
   procedure :: Init => TMultiFluidDE_Init
   procedure :: w_de => TMultiFluidDE_w_de
@@ -26,12 +31,15 @@ module MultiFluidDE
   procedure :: Effective_w_wa => TMultiFluidDE_Effective_w_wa
   procedure :: PerturbedStressEnergy => TMultiFluidDE_PerturbedStressEnergy
   procedure :: PerturbationEvolve => TMultiFluidDE_PerturbationEvolve
+  procedure :: PerturbationInitial => TMultiFluidDE_PerturbationInitial
   procedure :: diff_rhopi_Add_Term => TMultiFluidDE_diff_rhopi_Add_Term
   procedure, nopass :: PythonClass => TMultiFluidDE_PythonClass
   procedure, nopass :: SelfPointer => TMultiFluidDE_SelfPointer
   procedure :: ReadParams => TMultiFluidDE_ReadParams
   procedure :: w_derivative
   end type TMultiFluidDE
+
+  procedure(TClassDverk) :: dverk
 
   public TMultiFluidDE
 
@@ -44,7 +52,7 @@ module MultiFluidDE
     real(dl), dimension(max_num_of_fluids) :: w_de
     real(dl), intent(in) :: a
     integer :: i
-    real(dl) :: zc, ac, fde_zc, wn, z
+    real(dl) :: zc, ac, fde_zc, wn, z, phi, phidot, K, V
 
     ! i - counts the component: 1 is the late component, 2 is the early component.
     w_de = 0
@@ -56,6 +64,18 @@ module MultiFluidDE
         else if (this%models(i) == 2) then
           ! w0wa with PPF - allows phantom divide crossing
           w_de(i) = this%w0 + this%wa * (1-a)
+        else if (this%models(i) == 3) then
+          ! Binned w model
+          z = 1._dl/a - 1._dl
+          if (z < this%z1) then
+            w_de(i) = this%w0
+          else if (z < this%z2) then
+            w_de(i) = this%w1
+          else if (z < this%z3) then
+            w_de(i) = this%w2
+          else
+            w_de(i) = this%w3
+          end if
         else
           stop "[Multifluid DE] Invalid dark energy model for fluid 1"
         end if
@@ -82,23 +102,44 @@ module MultiFluidDE
     real(dl), dimension(max_num_of_fluids) :: grho_de
     real(dl), intent(in) :: a
     integer :: i
-    real(dl) :: w0, wa, zc, ac, fde_zc, oma_zc, wn, z
+    real(dl) :: w0, wa, zc, ac, fde_zc, oma_zc, wn, z, phi, phidot, grho_late_today, grho_ede_today
 
     ! Returns 8*pi*G*rho_de, no scale factors
-    ! Assuming EDE is negligible today
     ! grhode_today = grhocrit * (1 - Omega_baryons - Omega_cdm - Omega_neutrinos - Omega_photons)
     grho_de = 0
     do i = 1, this%num_of_components
       if (i == 1) then
+        if (this%num_of_components == 2 .and. this%models(2) == 1 .and. this%zc < 100) then ! Discounting EDE contribution today from total DE energy
+          zc = this%zc
+          fde_zc = this%fde_zc
+          wn = this%wn
+          oma_zc = fde_zc * this%grhonode_zc / (grhocrit * (1 - fde_zc))
+          grho_ede_today = grhocrit * (2._dl * oma_zc)/(1 + (1+zc)**(3*(1+wn)))
+          grho_late_today = grhode_today - grho_ede_today
+        else ! Don't want to do these calculations if EDE is indeed negligible
+          grho_late_today = grhode_today
+        end if
         if (this%models(i) == 1) then
           ! w_constant model
           !w0 = this%de_params(max_num_of_params*(i-1) + 1)
           w0 = this%w0
-          grho_de(i) = grhode_today * a**(-3*(1 + w0))
+          grho_de(i) = grho_late_today * a**(-3*(1 + w0))
         else if (this%models(i) == 2) then
           w0 = this%w0
           wa = this%wa
-          grho_de(i) = grhode_today * a**(-3*(1 + w0 + wa)) * exp(-3 * wa * (1-a))
+          grho_de(i) = grho_late_today * a**(-3*(1 + w0 + wa)) * exp(-3 * wa * (1-a))
+        else if (this%models(i) == 3) then
+          ! Binned w model
+          z = 1._dl/a - 1
+          if (z < this%z1) then
+            grho_de(i) = grho_late_today * a**(-3*(1 + this%w0))
+          else if (z < this%z2) then
+            grho_de(i) = grho_late_today * this%fac1 * (a * (1+this%z1))**(-3*(1+this%w1)) ! See fac1, fac2 and fac3 on init
+          else if (z < this%z3) then
+            grho_de(i) = grho_late_today * this%fac2 * (a * (1+this%z2))**(-3*(1 + this%w2)) ! They are the necessary factors to make grho_de continuous
+          else
+            grho_de(i) = grho_late_today * this%fac3 * (a * (1+this%z3))**(-3*(1 + this%w3))
+          end if
         else
           stop "[Multifluid DE] Invalid dark energy model for fluid 1"
         end if
@@ -116,9 +157,11 @@ module MultiFluidDE
           ac = 1._dl/(1._dl + zc)
           oma_zc = fde_zc * this%grhonode_zc / (grhocrit * (1 - fde_zc))
           grho_de(i) = grhocrit * (2._dl * oma_zc)/(1 + ( (1+zc)/(1+z) )**(3*(1+wn)))
+          ! grho_ede(a = 1) = grhocrit * (2._dl * oma_zc)/(1 + (1+zc)**(3*(1+wn)))
         else
           stop "[Multifluid DE] Invalid dark energy model for fluid 2"
         end if
+      
       else 
         stop "[Multifluid DE] Invalid dark energy fluid"
       end if
@@ -155,6 +198,7 @@ module MultiFluidDE
     real(dl), intent(in) :: ay(*)
     real(dl), intent(inout) :: ayprime(*)
     integer, intent(in) :: w_ix
+    real(dl) :: phi, phidot, delta_phi, delta_phi_prime
     integer :: i, delta_index
 
     ! TODO clean variables
@@ -162,14 +206,15 @@ module MultiFluidDE
     dgqe = 0
     do i=1, this%num_of_components
       delta_index = w_ix + 2*(i - 1)
-      if (i == 1 .and. this%models(1) == 2) then ! w0wa requires PPF
+      if (i == 1 .and. (this%models(1) == 2) .or. this%models(1) == 3) then ! w0wa requires PPF
         call PPF_Perturbations(this, dgrhoe, dgqe, &
         a, dgq, dgrho, grho, grhov_t, w, gpres_noDE, &
         etak, adotoa, k, kf1, ay, ayprime, w_ix)
       else
         if (this%models(1) == 2) then
-          delta_index = delta_index - 1 ! PPF has only one perturbation equation
+          delta_index = delta_index - 1 ! PPF has only one perturbation equation, so I need to decrease one index
         end if
+
         ! Usual fluid definitions
         dgrhoe(i) = ay(delta_index) * grhov_t(i)
         dgqe(i) = ay(delta_index + 1) * grhov_t(i) * (1 + w(i))
@@ -193,6 +238,7 @@ module MultiFluidDE
           ! w_constant model
           dwda = 0
         else
+          ! w0wa and binW models use PPF equations, so we don't need to calculate this!
           stop "[Multifluid DE] Invalid dark energy model for fluid 1"
         end if
 
@@ -205,6 +251,8 @@ module MultiFluidDE
           fde_zc = this%fde_zc
           dwda = 3 * ac * (1+wn)**2 * (ac/a)**(-1 + 3*(1+wn)) &
           / (a**2 * (1 + (ac/a)**(3*(1+wn)) )**2) 
+        else if (this%models(i)==2) then
+          stop "[Multifluid DE] Scalar Field DE doesn't need to invoke this subroutine. Something is wrong"
         else
           stop "[Multifluid DE] Invalid dark energy model for fluid 2"
         end if
@@ -221,8 +269,8 @@ module MultiFluidDE
     real(dl), dimension(max_num_of_fluids), intent(in) :: w
     real(dl), intent(in) :: a, adotoa, k, z
     integer, intent(in) :: w_ix
-    real(dl) :: Hv3_over_k, v, delta
-    real(dl), parameter :: cs2 = 1._dl
+    real(dl) :: Hv3_over_k, v, delta, fac
+    real(dl) :: cs2, phi, phidot, delta_phi, delta_phi_prime
     integer :: i, delta_index
 
     ! Fluid equations in synchronous gauge https://arxiv.org/pdf/1806.10608.pdf
@@ -230,12 +278,23 @@ module MultiFluidDE
     ! PPF has only one equation for Gamma and it is initialized in the PerturbedStressEnergy subroutine
     do i=1, this%num_of_components
       delta_index = w_ix + 2*(i-1)
-      if (this%models(1) == 2) then
-        delta_index = delta_index - 1
+      if (this%models(1) == 2 .or. this%models(1) == 3) then
+        delta_index = delta_index - 1 ! PPF has one less equation
         if (i == 1) then
-          cycle
+          cycle ! The PPF evolution equations are defined in another function
         end if
       end if
+
+      if (i == 2 .and. this%models(2) == 1 .and. this%wn < 0.9999) then
+        ! Simulating sound speed dynamics for Axion fluid EDE
+        fac = 2*a**(2-6*this%wn)*this%freq**2
+        cs2 = (fac*(this%n-1) + k**2)/(fac*(this%n+1) + k**2)
+      else
+        cs2 = 1._dl
+      end if
+
+      
+      ! Fluid perturbation equations
       delta = y(delta_index)
       v = y(delta_index + 1)
       Hv3_over_k =  3 * adotoa * v / k
@@ -246,7 +305,7 @@ module MultiFluidDE
       ! The remaining term is the one involving the adiabatic sound speed
       ayprime(delta_index) = ayprime(delta_index) - adotoa*Hv3_over_k*a*this%w_derivative(a,i)
       ! JVR - checked the term involving 1/3 * (d(ln(1+w))/lna)
-      ! Velocity
+      ! Velocity evolution
       if (abs(w(i)+1) > 1e-6) then
           ayprime(delta_index + 1) = - adotoa * (1 - 3 * cs2) * v + &
               k * cs2 * delta / (1 + w(i))
@@ -268,10 +327,25 @@ module MultiFluidDE
     else if (this%models(1) == 2) then
       w = this%w0
       wa = this%wa
+    else if (this%models(1) == 3) then
+      w = this%w0
+      wa = 0
     else
       stop "[Multifluid DE] Effective w0 wa not implemented for this DE model"
     end if
   end subroutine TMultiFluidDE_Effective_w_wa
+
+  subroutine TMultiFluidDE_PerturbationInitial(this, y, a, tau, k)
+    class(TMultiFluidDE), intent(in) :: this
+    real(dl), intent(out) :: y(:)
+    real(dl), intent(in) :: a, tau, k
+    integer :: delta_index
+    !Get initial values for perturbations at a (or tau)
+    !For standard adiabatic perturbations can usually just set to zero to good accuracy
+
+    y = 0
+
+  end subroutine TMultiFluidDE_PerturbationInitial
 
   ! --------------------- PPF specific subroutines ---------------------
 
@@ -346,7 +420,7 @@ module MultiFluidDE
     use results
     class(TMultiFluidDE), intent(inout) :: this
     class(TCAMBdata), intent(in), target :: State
-    real(dl) :: ac
+    real(dl) :: ac, grho_rad, grho_matter, xc, F, p, mu, n, zeq
 
     ! JVR - If we need any information from other components, Init is the place to get it
 
@@ -358,13 +432,46 @@ module MultiFluidDE
 
     ac = 1._dl/(1+this%zc)
 
+    if (this%models(1)==3) then
+      this%fac3 = (1+this%z1)**(3*(1 + this%w0)) * ((1+this%z2)/(1+this%z1))**(3*(1+this%w1)) * ((1+this%z3) / (1+this%z2))**(3*(1 + this%w2))
+      this%fac2 = (1+this%z1)**(3*(1 + this%w0)) * ((1+this%z2)/(1+this%z1))**(3*(1+this%w1))
+      this%fac1 = (1+this%z1)**(3*(1 + this%w0))
+    end if
+
     select type (State)
     type is (CAMBdata)
       Omega_de = State%Omega_de
       grhode_today = State%grhov
       grhocrit = State%grhocrit
       this%grhonode_zc = State%grho_no_de(ac) / ac**4
+      grho_rad = (kappa/c**2*4*sigma_boltz/c**3*State%CP%tcmb**4*Mpc**2*(1+3.046*7._dl/8*(4._dl/11)**(4._dl/3)))
+      grho_matter = (State%grhoc + State%grhob) * ac
+      zeq = (State%CP%ombh2+State%CP%omch2)/((State%grhog+State%grhornomass)/grhocrit) / (State%CP%H0/100)**2
     end select
+
+    ! If wn = 1 then cs2 = 1
+    ! If not, effective sound speed is dynamical
+    ! Check equations in https://arxiv.org/pdf/1806.10608.pdf
+    if (this%models(2)==1 .and. this%wn < 0.9999) then
+      ! Get (very) approximate result for sound speed parameter; arXiv:1806.10608  Eq 30 (but mu may not exactly agree with what they used)
+      n = nint((1+this%wn)/(1-this%wn))
+      ac = 1._dl / (1._dl + this%zc)
+      !Assume radiation or matter domination, standard neutrino model; H0 factors cancel
+      F=7./8
+      if (this%zc > zeq) then
+        p = 1./2
+        xc = ac**2 * p / sqrt(grho_rad/3)
+      else
+        p = 2./3
+        xc = ac**2 * p / sqrt(grho_matter*ac / 3)
+      end if
+
+      mu = 1/xc*(1-cos(this%theta_i))**((1-n)/2.)*sqrt((1-F)*(6*p+2)*this%theta_i/n/sin(this%theta_i)) ! eq 28
+      this%freq =  mu*(1-cos(this%theta_i))**((n-1)/2.)* &
+          sqrt(const_pi)*Gamma((n+1)/(2.*n))/Gamma(1+0.5/n)*2.**(-(n**2+1)/(2.*n))*3.**((1./n-1)/2)*ac**(-6./(n+1)+3) &
+          *( ac**(6*n/(n+1.))+1)**(0.5*(1./n-1)) ! eq 30
+      this%n = n
+    end if
   end subroutine TMultiFluidDE_Init
 
   subroutine TMultiFluidDE_ReadParams(this, Ini)

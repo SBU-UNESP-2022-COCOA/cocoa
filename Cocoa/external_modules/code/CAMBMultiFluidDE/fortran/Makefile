@@ -35,6 +35,7 @@ endif
 #ifortErr = 1
 #endif
 ifortErr = 1
+
 ifeq "$(ifortErr)" "0"
 
 #Intel compiler

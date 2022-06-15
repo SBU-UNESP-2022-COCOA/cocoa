@@ -478,7 +478,7 @@
         if (global_error_flag/=0) then
             write(*,*) 'TEarlyDarkEnergy error integrating', afrom, aend
             write(*,*) this%n, this%f, this%m, this%theta_i
-            stop
+            !stop
             check_error = .false.
             return
         end if
@@ -667,9 +667,12 @@
         integer iflag, iter
         class(TEarlyDarkEnergy), intent(inout) :: this
         real(dl) :: log_params(2)
+        real(dl) :: ac
 
         ! 1 - log_params(*) will be the initial guess for the algorithm
         if (this%which_potential == 1) then
+            ! log_params(1) = log(this%V0)]
+            ac = 1._dl/(1 + this%zc)
             log_params(1) = log(this%V0)
             log_params(2) = log(this%initial_phi)
         else

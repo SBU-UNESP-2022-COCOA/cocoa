@@ -1,0 +1,39 @@
+if [ -z "${ROOTDIR}" ]; then
+  echo 'ERROR ROOTDIR not defined'
+  return
+fi
+if [ -z "${CXX_COMPILER}" ]; then
+  echo 'ERROR CXX_COMPILER not defined'
+  return 1
+fi
+if [ -z "${C_COMPILER}" ]; then
+  echo 'ERROR C_COMPILER not defined'
+  return 1
+fi
+if [ -z "${FORTRAN_COMPILER}" ]; then
+  echo 'ERROR FORTRAN_COMPILER not defined'
+  return 1
+fi
+if [ -z "${PYTHON3}" ]; then
+  echo 'ERROR PYTHON3 not defined'
+  return 1
+fi
+
+# ----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
+# ------------------------- COMPILE H0LICOW LIKELIHOOD -----------------------
+# ----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
+
+if [ -z "${IGNORE_H0LICOW_COMPILATION}" ]; then
+    echo 'COMPILING H0LICOW'
+
+    $PIP3 install lenstronomy
+    
+    if [ $? -ne 0 ] 
+    then
+      echo "PROBLEM BUILDING H0LICOW"
+    fi
+
+    cd $ROOTDIR
+fi

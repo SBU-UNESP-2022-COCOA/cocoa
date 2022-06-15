@@ -3408,31 +3408,40 @@
 
     subroutine PKequal(State,redshift,w_lam,wa_ppf,w_hf,wa_hf)
     !used by halofit_casarini: arXiv:0810.0190, arXiv:1601.07230
-    Type(CAMBdata) :: State
+    Type(CAMBdata) :: State, State2
+    Type(TDarkEnergyEqnOfState) :: w_const_type
     real(dl) :: redshift,w_lam,wa_ppf,w_hf,wa_hf
     real(dl) :: z_star,tau_star,dlsb,dlsb_eq,w_true,wa_true,error
 
-    z_star=State%ThermoDerivedParams( derived_zstar )
+    ! State = our model
+    ! State2 = w_const
+
+    State2 = State
+    w_const_type%w_lam = -0.9 ! initial value
+    w_const_type%is_cosmological_constant = .false.
+    State2%CP%DarkEnergy = w_const_type
+
+    z_star=State%ThermoDerivedParams( derived_zstar ) ! decoupling - quintessence
     tau_star=State%TimeOfz(z_star)
-    dlsb=State%TimeOfz(redshift)-tau_star
-    w_true=w_lam
+    dlsb=State%TimeOfz(redshift)-tau_star ! "distance" (conformal time) to last scattering surface
+    w_true=w_lam 
     wa_true=wa_ppf
     wa_ppf=0._dl
     do
-        z_star=State%ThermoDerivedParams( derived_zstar )
-        tau_star=State%TimeOfz(State%ThermoData%z_star)
-        dlsb_eq=State%TimeOfz(redshift)-tau_star
+        z_star=State2%ThermoDerivedParams( derived_zstar )
+        tau_star=State2%TimeOfz(State2%ThermoData%z_star)
+        dlsb_eq=State2%TimeOfz(redshift)-tau_star
         error=1.d0-dlsb_eq/dlsb
         if (abs(error) <= 1d-7) exit
         w_lam=w_lam*(1+error)**10.d0
+        w_const_type%w_lam = w_lam
+        State2%CP%DarkEnergy = w_const_type
     enddo
     w_hf=w_lam
     wa_hf=0._dl
     w_lam=w_true
     wa_ppf=wa_true
     write(*,*)'at z = ',real(redshift),' equivalent w_const =', real(w_hf)
-
     end subroutine PKequal
-
 
     end module NonLinear

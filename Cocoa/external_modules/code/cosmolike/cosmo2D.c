@@ -3386,13 +3386,10 @@ const int init_static_vars_only)
   else
   {
     res = (init_static_vars_only == 1) ? int_for_C_gg_tomo_limber(amin, (void*) ar) :
-      like.high_def_integration == 2 ?
+      like.high_def_integration > 0 ?
       int_gsl_integrate_high_precision(int_for_C_gg_tomo_limber, (void*) ar, amin, amax, NULL,
         GSL_WORKSPACE_SIZE) :
-      like.high_def_integration == 1 ?
       int_gsl_integrate_medium_precision(int_for_C_gg_tomo_limber, (void*) ar, amin, amax, NULL,
-        GSL_WORKSPACE_SIZE) :
-      int_gsl_integrate_low_precision(int_for_C_gg_tomo_limber, (void*) ar, amin, amax, NULL,
         GSL_WORKSPACE_SIZE);
   }
   return res;
@@ -3788,6 +3785,7 @@ double int_for_C_ks_limber(double a, void* params)
     {
       const double OMM = cosmology.Omega_m_growth;
       const double norm = A_IA_Joachimi(a)*OMM*nuisance.c1rhocrit_ia/growfac_a;
+
       res = (-WS1*WK2*norm + WK1*WK2);
 
       break;
@@ -3796,6 +3794,7 @@ double int_for_C_ks_limber(double a, void* params)
     {
       const double OMM = cosmology.Omega_m_growth;
       const double norm = OMM*nuisance.c1rhocrit_ia/growfac_a;
+
       res = (-WS1*WK2*norm + WK1*WK2);
 
       break;
@@ -3805,7 +3804,7 @@ double int_for_C_ks_limber(double a, void* params)
       const double OMM = cosmology.Omega_m_growth;
       const double norm = (OMM*nuisance.c1rhocrit_ia/growfac_a)*
         nuisance.A_ia*pow(1.0/(a*nuisance.oneplusz0_ia), nuisance.eta_ia);
-        
+
       res = -(WS1*WK2*norm + WK1*WK2);
 
       break;
@@ -4261,7 +4260,7 @@ double int_for_C_ys_tomo_limber(double a, void* params)
       const double OMM = cosmology.Omega_m_growth;
       const double norm = (OMM*nuisance.c1rhocrit_ia/growfac_a)*
         nuisance.A_ia*pow(1.0/(a*nuisance.oneplusz0_ia), nuisance.eta_ia);
-      
+
       res = WK*WY - WS*WY*norm;
 
       break;

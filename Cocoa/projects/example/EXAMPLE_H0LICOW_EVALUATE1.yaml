@@ -1,0 +1,13 @@
+params:
+  ombh2: 0.022
+  omch2: 0.12
+  H0: 81
+  As: 2.1e-9
+  ns: 0.96
+likelihood: 
+  h0licow.h0licowlike: null
+theory:
+  camb:
+    stop_at_error: False
+sampler:
+    evaluate: null

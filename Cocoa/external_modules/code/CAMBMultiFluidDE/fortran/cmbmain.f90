@@ -294,6 +294,9 @@
     class(CAMBdata) :: State
 
     call SetActiveState(State)
+
+    if (global_error_flag/=0) return ! JVR - should prevent allocation errors if global error happens
+
     if (State%CP%WantScalars .and. State%CP%WantCls .and. global_error_flag==0) then
         allocate(iCl_Scalar(State%CLdata%CTransScal%ls%nl,C_Temp:State%Scalar_C_last), source=0._dl)
         if (State%CP%want_cl_2D_array) then
@@ -330,8 +333,6 @@
     if (CP%WantScalars .and. allocated(iCl_Array)) deallocate(iCl_Array)
     if (CP%WantVectors .and. allocated(iCl_Vector)) deallocate(iCl_vector)
     if (CP%WantTensors .and. allocated(iCl_Tensor)) deallocate(iCl_tensor)
-
-    if (global_error_flag/=0) return
 
     if (CP%OutputNormalization >=2) call State%CLData%NormalizeClsAtl(CP,CP%OutputNormalization)
     !Normalize to C_l=1 at l=OutputNormalization
@@ -731,6 +732,7 @@
     end subroutine DoSourcek
 
     subroutine GetSourceMem
+    integer :: err
 
     if (CP%WantScalars) then
         if (WantLateTime) then
@@ -752,7 +754,8 @@
     if (allocated(ThisSources%LinearSrc)) &
         deallocate(ThisSources%LinearSrc)
     allocate(ThisSources%LinearSrc(ThisSources%Evolve_q%npoints,&
-        ThisSources%SourceNum,State%TimeSteps%npoints), source=0._dl)
+        ThisSources%SourceNum,State%TimeSteps%npoints), source=0._dl, stat=err)
+    if (err/=0) call GlobalError('Sources requires too much memory to allocate', error_unsupported_params)                                                                               
 
     end subroutine GetSourceMem
 

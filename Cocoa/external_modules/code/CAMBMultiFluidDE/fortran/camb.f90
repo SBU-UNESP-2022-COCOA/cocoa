@@ -241,7 +241,6 @@
     use DarkEnergyFluid
     use DarkEnergyPPF
     use Quintessence
-    use MultiFluidDE
     use results
 #ifdef COSMOREC
     use CosmoRec
@@ -412,8 +411,6 @@
         allocate (TAxionEffectiveFluid::P%DarkEnergy)
     else if (DarkEneryModel == 'EARLYQUINTESSENCE') then
         allocate (TEarlyQuintessence::P%DarkEnergy)
-    else if (DarkEneryModel == 'MULTIFLUID') then
-        allocate (TMultiFluidDE::P%DarkEnergy)
     else
         ErrMsg = 'Unknown dark energy model: '//trim(DarkEneryModel)
         return

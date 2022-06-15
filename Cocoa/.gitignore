@@ -10,6 +10,9 @@ core.*
 *.egg-info/
 *.out
 
+Cocoa/external_modules/code/planck/code/spt_clik/svnversion
+Cocoa/external_modules/code/PolyChordLite/dist/
+Cocoa/external_modules/code/PolyChordLite/dist/pypolychord-1.20.0-py3.7-linux-x86_64.egg
 cobaya/cobaya/likelihoods/.gitignore
 external_modules/code/.gitignore
 external_modules/data/.gitignore
@@ -20,7 +23,7 @@ external_modules/data/bicep_keck_2015/
 external_modules/data/des_data/
 external_modules/data/sn_data/
 external_modules/data/simons_observatory/
-
+external_modules/data/h0licow_distance_chains/
 
 set_installation_options
 compile_external_modules
@@ -46,6 +49,7 @@ external_modules/data/lsst_y1
 external_modules/data/des_y3
 external_modules/data/des_4x2ptN
 external_modules/data/kids
+external_modules/data/cocoa_*
 
 external_modules/code/XXX
 external_modules/code/des_y1
@@ -56,6 +60,7 @@ external_modules/code/lsst_y1
 external_modules/code/des_y3
 external_modules/code/des_4x2ptN
 external_modules/code/kids
+external_modules/code/cocoa_*
 
 cobaya/cobaya/likelihoods/XXX
 cobaya/cobaya/likelihoods/des_y1
@@ -66,3 +71,4 @@ cobaya/cobaya/likelihoods/lsst_y1
 cobaya/cobaya/likelihoods/des_y3
 cobaya/cobaya/likelihoods/des_4x2ptN
 cobaya/cobaya/likelihoods/kids
+cobaya/cobaya/likelihoods/cocoa_*

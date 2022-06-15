@@ -18,6 +18,9 @@ tar xf simons_observatory.xz
 rm -rf ./spt_hiell_2020/
 tar xf spt_hiell_2020.xz
 
+rm -rf ./h0licow_distance_chains/
+tar xf h0licow_distance_chains.xz
+
 if [ -z "${THREAD_UNXZ}" ]; then
 	# ---------------------------------------------
 	cd ./planck

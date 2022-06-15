@@ -239,12 +239,15 @@
 
     contains
     procedure :: DeltaTime => CAMBdata_DeltaTime
+    procedure :: DeltaTimeArr => CAMBdata_DeltaTimeArr ! Added
     procedure :: TimeOfz => CAMBdata_TimeOfz
     procedure :: TimeOfzArr => CAMBdata_TimeOfzArr
     procedure :: DeltaPhysicalTimeGyr => CAMBdata_DeltaPhysicalTimeGyr
+    procedure :: DeltaPhysicalTimeGyrArr => CAMBdata_DeltaPhysicalTimeGyrArr ! Added
     procedure :: AngularDiameterDistance => CAMBdata_AngularDiameterDistance
     procedure :: AngularDiameterDistanceArr => CAMBdata_AngularDiameterDistanceArr
     procedure :: AngularDiameterDistance2 => CAMBdata_AngularDiameterDistance2
+    procedure :: AngularDiameterDistance2Arr => CAMBdata_AngularDiameterDistance2Arr ! JVR - added
     procedure :: LuminosityDistance => CAMBdata_LuminosityDistance
     procedure :: ComovingRadialDistance => CAMBdata_ComovingRadialDistance
     procedure :: ComovingRadialDistanceArr => CAMBdata_ComovingRadialDistanceArr
@@ -302,6 +305,53 @@
     P => PType
 
     end subroutine CAMBdata_SelfPointer
+
+    ! JVR - ADDING IMPLEMENTATIONS OF ARR FUNCTIONS
+    subroutine CAMBdata_DeltaTimeArr(this, arr,  a1, a2, n, tol)
+    class(CAMBdata) :: this
+    integer, intent(in) :: n
+    real(dl), intent(out) :: arr(n)
+    real(dl), intent(in) :: a1(n), a2(n)
+    real(dl), intent(in), optional :: tol
+    integer i
+
+    !$OMP PARALLEL DO DEFAULT(SHARED),SCHEDULE(STATIC)
+    do i = 1, n
+        arr(i) = this%DeltaTime(a1(i), a2(i), tol)
+    end do
+
+    end subroutine CAMBdata_DeltaTimeArr
+
+    subroutine CAMBdata_DeltaPhysicalTimeGyrArr(this, arr,  a1, a2, n, tol)
+    class(CAMBdata) :: this
+    integer, intent(in) :: n
+    real(dl), intent(out) :: arr(n)
+    real(dl), intent(in) :: a1(n), a2(n)
+    real(dl), intent(in), optional :: tol
+    integer i
+
+    !$OMP PARALLEL DO DEFAULT(SHARED),SCHEDULE(STATIC)
+    do i = 1, n
+        arr(i) = this%DeltaPhysicalTimeGyr(a1(i), a2(i), tol)
+    end do
+
+    end subroutine CAMBdata_DeltaPhysicalTimeGyrArr
+
+    subroutine CAMBdata_AngularDiameterDistance2Arr(this, arr, z1, z2, n)
+    class(CAMBdata) :: this
+    real(dl), intent(out) :: arr(n)
+    real(dl), intent(in) :: z1(n), z2(n)
+    integer, intent(in) :: n
+    integer i
+
+    !$OMP PARALLEL DO DEFAULT(SHARED),SCHEDULE(STATIC)
+    do i = 1, n
+        arr(i) = this%AngularDiameterDistance2(z1(i),z2(i))
+    end do
+    !$OMP END PARALLEL DO
+
+    end subroutine CAMBdata_AngularDiameterDistance2Arr
+
 
     subroutine CAMBdata_SetParams(this, P, error, DoReion, call_again, background_only)
     !Initialize background variables; does not yet calculate thermal history
