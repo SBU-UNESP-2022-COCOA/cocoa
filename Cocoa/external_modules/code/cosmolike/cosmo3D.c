@@ -1031,6 +1031,313 @@ double** io_z, double** io_lnP, int io)
   }
 }
 
+//KZ begin: define setup_p_nonlin_weyl_matter/weyl
+
+void setup_p_nonlin_weyl_matter(int* io_nlog10k, int* io_nz, double** io_log10k,
+double** io_z, double** io_lnP_WM, int io)
+{
+  static int nlog10k;
+  static int nz;
+  static double* log10k = NULL;
+  static double* z = NULL;
+  static double* lnP = NULL;
+
+  if (io == 1)
+  {
+    // IO == 1 IMPLES THAT IO_PK(Z,K) WILL COPIED TO LOCAL PK(Z,K)
+    if (log10k != NULL)
+    {
+      free(log10k);
+    }
+    if (z != NULL)
+    {
+      free(z);
+    }
+    if (lnP != NULL)
+    {
+      free(lnP);
+    }
+
+    nlog10k = (*io_nlog10k);
+    nz = (*io_nz);
+
+    if (!(nlog10k > 5) || !(nz > 5))
+    {
+      log_fatal("array to small");
+      exit(1);
+    }
+
+    log10k = (double*) malloc(nlog10k*sizeof(double));
+    z = (double*) malloc(nz*sizeof(double));
+    lnP = (double*) malloc(nz*nlog10k*sizeof(double));
+    if (log10k == NULL || z == NULL || lnP == NULL)
+    {
+      log_fatal("fail allocation");
+      exit(1);
+    }
+
+    for (int j=0; j<nz; j++)
+    {
+      z[j] = (*io_z)[j];
+    }
+    #pragma omp parallel for
+    for (int i=0; i<nlog10k; i++)
+    {
+      log10k[i] = (*io_log10k)[i];
+      for (int j=0; j<nz; j++)
+      {
+        lnP[i*nz+j] = (*io_lnP_WM)[i*nz+j];
+      }
+    }
+  }
+  else
+  {
+    // IO != 1 IMPLES THAT LOCAL PK(Z,K) WILL COPIED TO IO_PK(Z,K)
+    if (log10k == NULL || z == NULL || lnP == NULL)
+    {
+      log_fatal("input pointer not setup\n");
+      exit(1);
+    }
+
+    (*io_nlog10k) = nlog10k;
+    (*io_nz) = nz;
+
+    if (io_log10k != NULL)
+    {
+      if((*io_log10k) != NULL)
+      {
+        free((*io_log10k));
+        (*io_log10k) = NULL;
+      }
+    }
+    else
+    {
+      log_fatal("input pointer not allocated\n");
+      exit(1);
+    }
+    if (io_z != NULL)
+    {
+      if((*io_z) != NULL)
+      {
+        free((*io_z));
+        (*io_z) = NULL;
+      }
+    }
+    else
+    {
+      log_fatal("input pointer not allocated\n");
+      exit(1);
+    }
+    if (io_lnP_WM != NULL)
+    {
+      if((*io_lnP_WM) != NULL)
+      {
+        free((*io_lnP_WM));
+        (*io_lnP_WM) = NULL;
+      }
+    }
+    else
+    {
+      log_fatal("input pointer not allocated\n");
+      exit(1);
+    }
+
+    (*io_log10k) = (double*) malloc(nlog10k*sizeof(double));
+    (*io_z) = (double*) malloc(nz*sizeof(double));
+    (*io_lnP_WM) = (double*) malloc(nz*nlog10k*sizeof(double));
+    if ((*io_log10k) == NULL || (*io_z) == NULL || (*io_lnP_WM) == NULL)
+    {
+      log_fatal("fail allocation");
+      exit(1);
+    }
+
+    for (int j = 0; j<nz; j++)
+    {
+      (*io_z)[j] = z[j];
+    }
+    #pragma omp parallel for
+    for (int i=0; i<nlog10k; i++)
+    {
+      (*io_log10k)[i] = log10k[i];
+      for (int j=0; j<nz; j++)
+      {
+        (*io_lnP_WM)[i*nz+j] = lnP[i*nz+j];
+      }
+    }
+
+    // ADD BARYIONIC PHYSICS
+    // KZ: NOT suportted for Weyl potential
+    // if (bary.is_Pk_bary == 1)
+    // {
+    //   #pragma omp parallel for
+    //   for (int i=0; i<nlog10k; i++)
+    //   {
+    //     const double KNL = pow(10.0,(*io_log10k)[i])*cosmology.coverH0;
+    //     for (int j=0; j<nz; j++)
+    //     {
+    //       const double a = 1.0/(1.0+z[j]);
+    //       (*io_lnP)[i*nz+j] = log(exp((*io_lnP)[i*nz+j])*PkRatio_baryons(KNL,a));
+    //     }
+    //   }
+    // }
+  }
+}
+
+
+void setup_p_nonlin_weyl_weyl(int* io_nlog10k, int* io_nz, double** io_log10k,
+double** io_z, double** io_lnP_WW, int io)
+{
+  static int nlog10k;
+  static int nz;
+  static double* log10k = NULL;
+  static double* z = NULL;
+  static double* lnP = NULL;
+
+  if (io == 1)
+  {
+    // IO == 1 IMPLES THAT IO_PK(Z,K) WILL COPIED TO LOCAL PK(Z,K)
+    if (log10k != NULL)
+    {
+      free(log10k);
+    }
+    if (z != NULL)
+    {
+      free(z);
+    }
+    if (lnP != NULL)
+    {
+      free(lnP);
+    }
+
+    nlog10k = (*io_nlog10k);
+    nz = (*io_nz);
+
+    if (!(nlog10k > 5) || !(nz > 5))
+    {
+      log_fatal("array to small");
+      exit(1);
+    }
+
+    log10k = (double*) malloc(nlog10k*sizeof(double));
+    z = (double*) malloc(nz*sizeof(double));
+    lnP = (double*) malloc(nz*nlog10k*sizeof(double));
+    if (log10k == NULL || z == NULL || lnP == NULL)
+    {
+      log_fatal("fail allocation");
+      exit(1);
+    }
+
+    for (int j=0; j<nz; j++)
+    {
+      z[j] = (*io_z)[j];
+    }
+    #pragma omp parallel for
+    for (int i=0; i<nlog10k; i++)
+    {
+      log10k[i] = (*io_log10k)[i];
+      for (int j=0; j<nz; j++)
+      {
+        lnP[i*nz+j] = (*io_lnP_WW)[i*nz+j];
+      }
+    }
+  }
+  else
+  {
+    // IO != 1 IMPLES THAT LOCAL PK(Z,K) WILL COPIED TO IO_PK(Z,K)
+    if (log10k == NULL || z == NULL || lnP == NULL)
+    {
+      log_fatal("input pointer not setup\n");
+      exit(1);
+    }
+
+    (*io_nlog10k) = nlog10k;
+    (*io_nz) = nz;
+
+    if (io_log10k != NULL)
+    {
+      if((*io_log10k) != NULL)
+      {
+        free((*io_log10k));
+        (*io_log10k) = NULL;
+      }
+    }
+    else
+    {
+      log_fatal("input pointer not allocated\n");
+      exit(1);
+    }
+    if (io_z != NULL)
+    {
+      if((*io_z) != NULL)
+      {
+        free((*io_z));
+        (*io_z) = NULL;
+      }
+    }
+    else
+    {
+      log_fatal("input pointer not allocated\n");
+      exit(1);
+    }
+    if (io_lnP_WW != NULL)
+    {
+      if((*io_lnP_WW) != NULL)
+      {
+        free((*io_lnP_WW));
+        (*io_lnP_WW) = NULL;
+      }
+    }
+    else
+    {
+      log_fatal("input pointer not allocated\n");
+      exit(1);
+    }
+
+    (*io_log10k) = (double*) malloc(nlog10k*sizeof(double));
+    (*io_z) = (double*) malloc(nz*sizeof(double));
+    (*io_lnP_WW) = (double*) malloc(nz*nlog10k*sizeof(double));
+    if ((*io_log10k) == NULL || (*io_z) == NULL || (*io_lnP_WW) == NULL)
+    {
+      log_fatal("fail allocation");
+      exit(1);
+    }
+
+    for (int j = 0; j<nz; j++)
+    {
+      (*io_z)[j] = z[j];
+    }
+    #pragma omp parallel for
+    for (int i=0; i<nlog10k; i++)
+    {
+      (*io_log10k)[i] = log10k[i];
+      for (int j=0; j<nz; j++)
+      {
+        (*io_lnP_WW)[i*nz+j] = lnP[i*nz+j];
+      }
+    }
+
+    // ADD BARYIONIC PHYSICS
+    // KZ: NOT suportted for Weyl potential
+    // if (bary.is_Pk_bary == 1)
+    // {
+    //   #pragma omp parallel for
+    //   for (int i=0; i<nlog10k; i++)
+    //   {
+    //     const double KNL = pow(10.0,(*io_log10k)[i])*cosmology.coverH0;
+    //     for (int j=0; j<nz; j++)
+    //     {
+    //       const double a = 1.0/(1.0+z[j]);
+    //       (*io_lnP)[i*nz+j] = log(exp((*io_lnP)[i*nz+j])*PkRatio_baryons(KNL,a));
+    //     }
+    //   }
+    // }
+  }
+}
+
+//KZ end
+
+
+
 double p_lin(double io_k, double io_a)
 {
   // k in units H_0/c (dimensioneless)
@@ -1279,6 +1586,285 @@ double Pdelta(double io_kNL, double io_a) {
   }
   return out_PK;
 }
+
+////KZ begin: add p_nonliner_weyl_matter/weyl and Pdelta_weyl_weyl/matter
+
+double p_nonlin_weyl_matter(double io_k, double io_a)
+{
+  // k in units H_0/c
+  static cosmopara C;
+  const int size = 1;
+  double tmp_log10k[size];
+  double tmp_z[size];
+  double out_lnP[size];
+  static double limits_z[2];
+  static int first = 0;
+  static double** log10k;
+  static double** z;
+  static double** lnP;
+  static int nlog10k;
+  static int nz;
+  if (first == 0) {
+    z = NULL;
+    lnP = NULL;
+    log10k = NULL;
+    first = 1;
+  }
+
+  if (recompute_cosmo3D(C))
+  {
+    update_cosmopara(&C);
+
+    if (log10k != NULL)
+    {
+      free((*log10k));
+      free(log10k);
+    }
+    log10k = (double**) malloc(1*sizeof(double*));
+    if (z != NULL)
+    {
+      free((*z));
+      free(z);
+    }
+    z = (double**) malloc(1*sizeof(double*));
+    if (lnP != NULL)
+    {
+      free((*lnP));
+      free(lnP);
+    }
+    lnP = (double**) malloc(1*sizeof(double*));
+
+    if (log10k == NULL)
+    {
+      log_fatal("fail allocation");
+      exit(1);
+    }
+    (*log10k) = NULL;
+
+    if (z == NULL)
+    {
+      log_fatal("fail allocation");
+      exit(1);
+    }
+    (*z) = NULL;
+
+    if (lnP == NULL)
+    {
+      log_fatal("fail allocation");
+      exit(1);
+    }
+    (*lnP) = NULL;
+
+    setup_p_nonlin_weyl_matter(&nlog10k, &nz, log10k, z, lnP, 0);
+    limits_z[0] = z[0][0];
+    limits_z[1] = z[0][nz-1];
+  }
+
+  // convert to h/Mpc
+  tmp_log10k[0] = log10(io_k/(cosmology.coverH0));
+  tmp_z[0] = 1.0/io_a-1.0;
+  if ((tmp_z[0]<limits_z[0]) || (tmp_z[0]>limits_z[1]))
+  {
+    log_fatal("redshift out of bounds z_min = %4.3e, z_max = %4.3e and z = %4.3e",
+      limits_z[0], limits_z[1], tmp_z[0]);
+    exit(1);
+  }
+
+  int i = 0;
+  {
+    size_t ilo = 0;
+    size_t ihi = nlog10k-2;
+    while (ihi>ilo+1) {
+      size_t ll = (ihi+ilo)/2;
+      if((*log10k)[ll]>tmp_log10k[0])
+        ihi = ll;
+      else
+        ilo = ll;
+    }
+    i = ilo;
+  }
+  int j = 0;
+  {
+    size_t ilo = 0;
+    size_t ihi = nz-2;
+    while (ihi>ilo+1) {
+      size_t ll = (ihi+ilo)/2;
+      if((*z)[ll]>tmp_z[0])
+        ihi = ll;
+      else
+        ilo = ll;
+    }
+    j = ilo;
+  }
+  double dx = (tmp_log10k[0]-(*log10k)[i])/((*log10k)[i+1]-(*log10k)[i]);
+  double dy = (tmp_z[0]-(*z)[j])/((*z)[j+1]-(*z)[j]);
+  out_lnP[0]=(1-dx)*(1-dy)*(*lnP)[i*nz+j]+(1-dx)*dy*(*lnP)[i*nz+(j+1)]
+                   +dx*(1-dy)*(*lnP)[(i+1)*nz+j]+dx*dy*(*lnP)[(i+1)*nz+(j+1)];
+
+  // convert from (Mpc/h)^3 to (Mpc/h)^3/(c/H0=100)^3 (dimensioneless)
+  return exp(out_lnP[0])/pow(cosmology.coverH0,3);
+}
+
+double Pdelta_weyl_matter(double io_kNL, double io_a) {
+  double out_PK;
+  static int P_type = -1;
+  if (P_type == -1) {
+    if (strcmp(pdeltaparams.runmode,"linear") == 0) {
+      P_type = 3;
+    }
+  }
+  switch (P_type) {
+    case 3:
+      //out_PK = p_lin(io_kNL, io_a); //Linear Power spectrum for Weyl-Weyl/matter not support
+      out_PK = p_nonlin_weyl_matter(io_kNL, io_a);
+      break;
+    default:
+      out_PK = p_nonlin_weyl_matter(io_kNL, io_a);
+      break;
+  }
+  return out_PK;
+}
+
+double p_nonlin_weyl_weyl(double io_k, double io_a)
+{
+  // k in units H_0/c
+  static cosmopara C;
+  const int size = 1;
+  double tmp_log10k[size];
+  double tmp_z[size];
+  double out_lnP[size];
+  static double limits_z[2];
+  static int first = 0;
+  static double** log10k;
+  static double** z;
+  static double** lnP;
+  static int nlog10k;
+  static int nz;
+  if (first == 0) {
+    z = NULL;
+    lnP = NULL;
+    log10k = NULL;
+    first = 1;
+  }
+
+  if (recompute_cosmo3D(C))
+  {
+    update_cosmopara(&C);
+
+    if (log10k != NULL)
+    {
+      free((*log10k));
+      free(log10k);
+    }
+    log10k = (double**) malloc(1*sizeof(double*));
+    if (z != NULL)
+    {
+      free((*z));
+      free(z);
+    }
+    z = (double**) malloc(1*sizeof(double*));
+    if (lnP != NULL)
+    {
+      free((*lnP));
+      free(lnP);
+    }
+    lnP = (double**) malloc(1*sizeof(double*));
+
+    if (log10k == NULL)
+    {
+      log_fatal("fail allocation");
+      exit(1);
+    }
+    (*log10k) = NULL;
+
+    if (z == NULL)
+    {
+      log_fatal("fail allocation");
+      exit(1);
+    }
+    (*z) = NULL;
+
+    if (lnP == NULL)
+    {
+      log_fatal("fail allocation");
+      exit(1);
+    }
+    (*lnP) = NULL;
+
+    setup_p_nonlin_weyl_weyl(&nlog10k, &nz, log10k, z, lnP, 0);
+    limits_z[0] = z[0][0];
+    limits_z[1] = z[0][nz-1];
+  }
+
+  // convert to h/Mpc
+  tmp_log10k[0] = log10(io_k/(cosmology.coverH0));
+  tmp_z[0] = 1.0/io_a-1.0;
+  if ((tmp_z[0]<limits_z[0]) || (tmp_z[0]>limits_z[1]))
+  {
+    log_fatal("redshift out of bounds z_min = %4.3e, z_max = %4.3e and z = %4.3e",
+      limits_z[0], limits_z[1], tmp_z[0]);
+    exit(1);
+  }
+
+  int i = 0;
+  {
+    size_t ilo = 0;
+    size_t ihi = nlog10k-2;
+    while (ihi>ilo+1) {
+      size_t ll = (ihi+ilo)/2;
+      if((*log10k)[ll]>tmp_log10k[0])
+        ihi = ll;
+      else
+        ilo = ll;
+    }
+    i = ilo;
+  }
+  int j = 0;
+  {
+    size_t ilo = 0;
+    size_t ihi = nz-2;
+    while (ihi>ilo+1) {
+      size_t ll = (ihi+ilo)/2;
+      if((*z)[ll]>tmp_z[0])
+        ihi = ll;
+      else
+        ilo = ll;
+    }
+    j = ilo;
+  }
+  double dx = (tmp_log10k[0]-(*log10k)[i])/((*log10k)[i+1]-(*log10k)[i]);
+  double dy = (tmp_z[0]-(*z)[j])/((*z)[j+1]-(*z)[j]);
+  out_lnP[0]=(1-dx)*(1-dy)*(*lnP)[i*nz+j]+(1-dx)*dy*(*lnP)[i*nz+(j+1)]
+                   +dx*(1-dy)*(*lnP)[(i+1)*nz+j]+dx*dy*(*lnP)[(i+1)*nz+(j+1)];
+
+  // convert from (Mpc/h)^3 to (Mpc/h)^3/(c/H0=100)^3 (dimensioneless)
+  return exp(out_lnP[0])/pow(cosmology.coverH0,3);
+}
+
+double Pdelta_weyl_weyl(double io_kNL, double io_a) {
+  double out_PK;
+  static int P_type = -1;
+  if (P_type == -1) {
+    if (strcmp(pdeltaparams.runmode,"linear") == 0) {
+      P_type = 3;
+    }
+  }
+  switch (P_type) {
+    case 3:
+      //out_PK = p_lin(io_kNL, io_a); //Linear Power spectrum for Weyl-Weyl/matter not support
+      out_PK = p_nonlin_weyl_matter(io_kNL, io_a);
+      break;
+    default:
+      out_PK = p_nonlin_weyl_matter(io_kNL, io_a);
+      break;
+  }
+  return out_PK;
+}
+
+////KZ end
+
+
+
 
 // calculating the angular diameter distance f_K
 // BS01 2.4, 2.30: f_K is a radial function that, depending on the curvature of

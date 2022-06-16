@@ -2490,7 +2490,11 @@ double int_for_C_ss_tomo_limber(double a, void* params)
   const double wk1 = W_kappa(a, fK, n1);
   const double wk2 = W_kappa(a, fK, n2);
   const double PK = (use_linear_ps == 1) ? p_lin(k,a) : Pdelta(k,a);
-  
+  //KZ begin
+  const double PK_WM = Pdelta_weyl_matter(k,a);
+  const double PK_WW = Pdelta_weyl_weyl(k,a);
+
+  //KZ end
   const double ell4 = ell*ell*ell*ell; // correction (1812.05995 eqs 74-79)
   const double ell_prefactor = l*(l - 1.)*(l + 1.)*(l + 2.)/ell4; 
 
@@ -2506,14 +2510,14 @@ double int_for_C_ss_tomo_limber(double a, void* params)
     case 1:
     {
       const double norm = A_IA_Joachimi(a)*cosmology.Omega_m*nuisance.c1rhocrit_ia/growfac_a;
-      res = ws1*ws2*norm*norm - (ws1*wk2+ws2*wk1)*norm + wk1*wk2;
+      res = ws1*ws2*norm*norm*PK - (ws1*wk2+ws2*wk1)*norm*PK_WM + wk1*wk2*PK_WW; //KZ: seperate PK for source and shear
 
       break;
     }
     case 3:
     {
       const double norm = cosmology.Omega_m*nuisance.c1rhocrit_ia/growfac_a;
-      res = ws1*ws2*norm*norm - (ws1*wk2+ws2*wk1)*norm + wk1*wk2;
+      res = ws1*ws2*norm*norm*PK - (ws1*wk2+ws2*wk1)*norm*PK_WM + wk1*wk2*PK_WW; //KZ: seperate PK for source and shear
 
       break;
     }
@@ -2521,7 +2525,7 @@ double int_for_C_ss_tomo_limber(double a, void* params)
     {
       const double norm = cosmology.Omega_m*nuisance.c1rhocrit_ia/growfac_a*
         nuisance.A_ia*pow(1./(a*nuisance.oneplusz0_ia), nuisance.eta_ia);
-      res = ws1*ws2*norm*norm - (ws1*wk2+ws2*wk1)*norm + wk1*wk2;
+      res = ws1*ws2*norm*norm*PK - (ws1*wk2+ws2*wk1)*norm*PK_WM + wk1*wk2*PK_WW; //KZ: seperate PK for source and shear
 
       break;
     }
@@ -2531,7 +2535,7 @@ double int_for_C_ss_tomo_limber(double a, void* params)
       exit(1);
     }
   }
-  return res*PK*(chidchi.dchida/(fK*fK))*ell_prefactor;
+  return res*(chidchi.dchida/(fK*fK))*ell_prefactor; //KZ: move PK above
 }
 
 double C_ss_tomo_limber_nointerp(double l, int ni, int nj, int use_linear_ps, 
@@ -2737,12 +2741,16 @@ double int_for_C_gs_tomo_limber(double a, void* params)
   const double tmp = (l - 1.)*l*(l + 1.)*(l + 2.);            // correction (1812.05995 eqs 74-79)
   const double ell_prefactor2 = (tmp > 0) ? sqrt(tmp)/(ell*ell) : 0.0;
 
-  double res = 0.0;
+  // KZ begin: res1 should be multiplied with pk_weyle_matter as the part containing W_kappa, while res2 multiplied by pk_matter_matter.
+  double res  = 0.0;
+  double res1 = 0.0;
+  double res2 = 0.0;
+  //KZ end
   switch(like.IA)
   {
     case 0:
     {
-      res = WK;
+      res1 = WK;
 
       break;
     }
@@ -2750,7 +2758,8 @@ double int_for_C_gs_tomo_limber(double a, void* params)
     {
       const double norm = A_IA_Joachimi(a)*cosmology.Omega_m*nuisance.c1rhocrit_ia/growfac_a;
 
-      res = (WK - WS*norm);
+      res1 = WK; //KZ
+      res2 = -WS*norm; //KZ: original res = res1+res2
 
       break;
     }
@@ -2758,7 +2767,8 @@ double int_for_C_gs_tomo_limber(double a, void* params)
     {
       const double norm = nuisance.A_z[ns]*cosmology.Omega_m*nuisance.c1rhocrit_ia/growfac_a;
 
-      res = (WK - WS*norm);
+      res1 = WK; //KZ
+      res2 = -WS*norm; //KZ: original res = res1+res2
 
       break;
     }
@@ -2767,7 +2777,8 @@ double int_for_C_gs_tomo_limber(double a, void* params)
       const double norm = cosmology.Omega_m*nuisance.c1rhocrit_ia/growfac_a*
         nuisance.A_ia*pow(1./(a*nuisance.oneplusz0_ia),nuisance.eta_ia);
 
-      res = (WK - WS*norm);
+      res1 = WK; //KZ
+      res2 = -WS*norm; //KZ: original res = res1+res2
 
       break;
     }
@@ -2780,6 +2791,10 @@ double int_for_C_gs_tomo_limber(double a, void* params)
 
   if (include_HOD_GX == 1)
   {
+    //KZ begin
+    log_fatal("Modified gravity not implemented with (HOD = TRUE)");
+    exit(1);
+    //KZ end
     if (include_RSD_GS == 1)
     {
       log_fatal("RSD not implemented with (HOD = TRUE)");
@@ -2795,6 +2810,11 @@ double int_for_C_gs_tomo_limber(double a, void* params)
   }
   else
   {
+
+    //KZ begin
+    const double PK_MM = use_linear_ps == 1 ? p_lin(k,a) : Pdelta(k,a);
+    const double PK_WM = Pdelta_weyl_matter(k,a);
+
     if (include_RSD_GS == 1)
     {
       const double chi_0 = f_K(ell/k);
@@ -2803,15 +2823,17 @@ double int_for_C_gs_tomo_limber(double a, void* params)
       const double a_1 = a_chi(chi_1);
       const double WRSD = W_RSD(ell, a_0, a_1, nl);
 
-      res *= (WGAL*b1 + WMAG*ell_prefactor*bmag) + WRSD;
+      res1 *= PK_WM * ((WGAL*b1 + WMAG*ell_prefactor*bmag) + WRSD);
+      res2 *= PK_MM * ((WGAL*b1 + WMAG*ell_prefactor*bmag) + WRSD);
     }
     else
     {
-      res *= (WGAL*b1 + WMAG*ell_prefactor*bmag);
+      res1 *= PK_WM * (WGAL*b1 + WMAG*ell_prefactor*bmag);
+      res2 *= PK_MM * (WGAL*b1 + WMAG*ell_prefactor*bmag);
     }
 
-    const double PK = use_linear_ps == 1 ? p_lin(k,a) : Pdelta(k,a);
-    res *= PK;
+    res = res1 + res2;
+    //KZ end
   }
   
   return res*(chidchi.dchida/(fK*fK))*ell_prefactor2;

@@ -27,6 +27,12 @@ void setup_growth(int* io_nz, double** io_z, double** io_G, int io);
 
 void setup_p_nonlin(int* io_nlog10k, int* io_nz, double** io_log10k,
                                   double** io_z, double** io_lnP, int io);
+// KZ begin
+void setup_p_nonlin_weyl_matter(int* io_nlog10k, int* io_nz, double** io_log10k,
+                                  double** io_z, double** io_lnP_WM, int io);
+void setup_p_nonlin_weyl_weyl(int* io_nlog10k, int* io_nz, double** io_log10k,
+                                  double** io_z, double** io_lnP_WW, int io);
+// KZ end
 
 void setup_p_lin(int* io_nlog10k, int* io_nz, double** io_log10k,
                                   double** io_z, double** io_lnP, int io);
@@ -58,6 +64,16 @@ double p_lin(double k, double a);
 double p_nonlin(double k, double a);
 
 double Pdelta(double k_NL, double a); // k in coverH0 units
+
+// KZ begin
+double p_nonlin_weyl_matter(double k, double a);
+
+double Pdelta_weyl_matter(double k_NL, double a); // k in coverH0 units
+
+double p_nonlin_weyl_weyl(double k, double a);
+
+double Pdelta_weyl_weyl(double k_NL, double a); // k in coverH0 units
+// KZ end
 
 double MG_Sigma(double a);
 
