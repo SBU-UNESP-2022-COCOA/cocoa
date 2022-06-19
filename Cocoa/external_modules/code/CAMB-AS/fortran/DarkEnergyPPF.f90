@@ -169,6 +169,7 @@
     !CASE 1:
     if(this%shear_model.eq.1 )then  
 
+        ! prime is derivative wrt to ln(a), dot is wrt to conformal time
         fGppf = 0._dl
         cg = this%c_g_ppf
 
@@ -181,7 +182,7 @@
         qq = (1.0 - (gpres_noDE + grhov_t*w)/adotoa**2)/2.0
         gprimeppf = gppf*(1.5 - 2.0*(1.0 - qq)*pp*a*adotoa) 
 
-        fzetappf = 0.4*gsh
+        fzetappf = 0.4*this%g0_ppf*a**(1.5)
 
         !print *, "model = ", this%shear_model
         !print *, "g0_ppf = ", this%g0_ppf
