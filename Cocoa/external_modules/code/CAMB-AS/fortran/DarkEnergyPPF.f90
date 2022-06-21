@@ -219,17 +219,20 @@
     
     gammacond=abs(Gamma/Phi_minus - fGppf)
 
-
+    !KZ: Approximation scheme: S_Gamma here as in the public camb, WH put it inside the else argument below
+    !KZ: Also under this approximation, there's no S_Gamma=0 in the if argument
+    S_Gamma=gppf*(dgpiT + ppiT_prime)
+    S_Gamma=S_Gamma-((gppf+fzetappf+gppf*fzetappf)*(grhoT+gpres_noDE) -grhov_t*(1_dl+w))*(VT_comoving)*k/adotoa
+    S_Gamma=S_Gamma/2._dl/k2/(1.0_dl + gppf)+ (gprimeppf - 2_dl*gppf)*Phi_minus/(1.0_dl + gppf)
+    
     if (ckH*ckH.gt.30_dl) then ! !KZ-edit: try 10
         Gamma=fGppf*Phi_minus
         Gammadot=0._dl
-        S_Gamma = 0.0_dl
+        !S_Gamma = 0.0_dl
     else
-    !WH's version:
-        S_Gamma=gppf*(dgpiT + ppiT_prime)
-        !S_Gamma = 0
-        S_Gamma=S_Gamma-((gppf+fzetappf+gppf*fzetappf)*(grhoT+gpres_noDE) -grhov_t*(1_dl+w))*(VT_comoving)*k/adotoa
-        S_Gamma=S_Gamma/2._dl/k2/(1.0_dl + gppf)+ (gprimeppf - 2_dl*gppf)*Phi_minus/(1.0_dl + gppf)
+        !S_Gamma=gppf*(dgpiT + ppiT_prime)
+        !S_Gamma=S_Gamma-((gppf+fzetappf+gppf*fzetappf)*(grhoT+gpres_noDE) -grhov_t*(1_dl+w))*(VT_comoving)*k/adotoa
+        !S_Gamma=S_Gamma/2._dl/k2/(1.0_dl + gppf)+ (gprimeppf - 2_dl*gppf)*Phi_minus/(1.0_dl + gppf)
 
         Gammadot = S_Gamma / (1 + ckH * ckH)- Gamma -ckH * ckH * (Gamma - fGppf * Phi_minus)
         Gammadot = Gammadot * adotoa
