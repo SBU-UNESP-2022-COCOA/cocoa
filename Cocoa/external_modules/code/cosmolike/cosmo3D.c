@@ -747,13 +747,13 @@ struct growths growfac_all(double io_a)
 // ----------------------------------------------------------------------------
 
 void setup_p_lin(int* io_nlog10k, int* io_nz, double** io_log10k,
-double** io_z, double** io_lnP, int io)
+double** io_z, double** io_lnP_MM, int io)
 {
   static int nlog10k;
   static int nz;
   static double* log10k = NULL;
   static double* z = NULL;
-  static double* lnP = NULL;
+  static double* lnP_MM = NULL;
 
   if(io == 1)
   {
@@ -766,9 +766,9 @@ double** io_z, double** io_lnP, int io)
     {
       free(z);
     }
-    if (lnP != NULL)
+    if (lnP_MM != NULL)
     {
-      free(lnP);
+      free(lnP_MM);
     }
 
     nlog10k = (*io_nlog10k);
@@ -781,8 +781,8 @@ double** io_z, double** io_lnP, int io)
 
     log10k = (double*) malloc(nlog10k*sizeof(double));
     z = (double*) malloc(nz*sizeof(double));
-    lnP = (double*) malloc(nz*nlog10k*sizeof(double));
-    if (log10k == NULL || z == NULL || lnP == NULL)
+    lnP_MM = (double*) malloc(nz*nlog10k*sizeof(double));
+    if (log10k == NULL || z == NULL || lnP_MM == NULL)
     {
       log_fatal("fail allocation");
       exit(1);
@@ -798,14 +798,14 @@ double** io_z, double** io_lnP, int io)
       log10k[i] = (*io_log10k)[i];
       for(int j=0; j<nz; j++)
       {
-        lnP[i*nz+j] = (*io_lnP)[i*nz+j];
+        lnP_MM[i*nz+j] = (*io_lnP_MM)[i*nz+j];
       }
     }
   }
   else
   {
     // IO != 1 IMPLES THAT LOCAL PK(Z,LOGK) WILL COPIED TO IO_PK(Z,LOGK)
-    if (log10k == NULL || z == NULL || lnP == NULL)
+    if (log10k == NULL || z == NULL || lnP_MM == NULL)
     {
       log_fatal("pk linear not setup from cobaya\n");
       exit(1);
@@ -842,12 +842,12 @@ double** io_z, double** io_lnP, int io)
       exit(1);
     }
 
-    if (io_lnP != NULL)
+    if (io_lnP_MM != NULL)
     {
-      if ((*io_lnP) != NULL)
+      if ((*io_lnP_MM) != NULL)
       {
-        free((*io_lnP));
-        (*io_lnP) = NULL;
+        free((*io_lnP_MM));
+        (*io_lnP_MM) = NULL;
       }
     }
     else
@@ -859,8 +859,8 @@ double** io_z, double** io_lnP, int io)
 
     (*io_log10k) = (double*) malloc(nlog10k*sizeof(double));
     (*io_z) = (double*) malloc(nz*sizeof(double));
-    (*io_lnP) = (double*) malloc(nz*nlog10k*sizeof(double));
-    if ((*io_log10k) == NULL || (*io_z) == NULL || (*io_lnP) == NULL)
+    (*io_lnP_MM) = (double*) malloc(nz*nlog10k*sizeof(double));
+    if ((*io_log10k) == NULL || (*io_z) == NULL || (*io_lnP_MM) == NULL)
     {
       log_fatal("fail allocation");
       exit(1);
@@ -876,20 +876,20 @@ double** io_z, double** io_lnP, int io)
       (*io_log10k)[i] = log10k[i];
       for (int j=0; j<nz; j++)
       {
-        (*io_lnP)[i*nz+j] = lnP[i*nz+j];
+        (*io_lnP_MM)[i*nz+j] = lnP_MM[i*nz+j];
       }
     }
   }
 }
 
 void setup_p_nonlin(int* io_nlog10k, int* io_nz, double** io_log10k,
-double** io_z, double** io_lnP, int io)
+double** io_z, double** io_lnP_MM, int io)
 {
   static int nlog10k;
   static int nz;
   static double* log10k = NULL;
   static double* z = NULL;
-  static double* lnP = NULL;
+  static double* lnP_MM = NULL;
 
   if (io == 1)
   {
@@ -902,9 +902,9 @@ double** io_z, double** io_lnP, int io)
     {
       free(z);
     }
-    if (lnP != NULL)
+    if (lnP_MM != NULL)
     {
-      free(lnP);
+      free(lnP_MM);
     }
 
     nlog10k = (*io_nlog10k);
@@ -918,8 +918,8 @@ double** io_z, double** io_lnP, int io)
 
     log10k = (double*) malloc(nlog10k*sizeof(double));
     z = (double*) malloc(nz*sizeof(double));
-    lnP = (double*) malloc(nz*nlog10k*sizeof(double));
-    if (log10k == NULL || z == NULL || lnP == NULL)
+    lnP_MM = (double*) malloc(nz*nlog10k*sizeof(double));
+    if (log10k == NULL || z == NULL || lnP_MM == NULL)
     {
       log_fatal("fail allocation");
       exit(1);
@@ -935,14 +935,14 @@ double** io_z, double** io_lnP, int io)
       log10k[i] = (*io_log10k)[i];
       for (int j=0; j<nz; j++)
       {
-        lnP[i*nz+j] = (*io_lnP)[i*nz+j];
+        lnP_MM[i*nz+j] = (*io_lnP_MM)[i*nz+j];
       }
     }
   }
   else
   {
     // IO != 1 IMPLES THAT LOCAL PK(Z,K) WILL COPIED TO IO_PK(Z,K)
-    if (log10k == NULL || z == NULL || lnP == NULL)
+    if (log10k == NULL || z == NULL || lnP_MM == NULL)
     {
       log_fatal("input pointer not setup\n");
       exit(1);
@@ -977,12 +977,12 @@ double** io_z, double** io_lnP, int io)
       log_fatal("input pointer not allocated\n");
       exit(1);
     }
-    if (io_lnP != NULL)
+    if (io_lnP_MM != NULL)
     {
-      if((*io_lnP) != NULL)
+      if((*io_lnP_MM) != NULL)
       {
-        free((*io_lnP));
-        (*io_lnP) = NULL;
+        free((*io_lnP_MM));
+        (*io_lnP_MM) = NULL;
       }
     }
     else
@@ -993,8 +993,8 @@ double** io_z, double** io_lnP, int io)
 
     (*io_log10k) = (double*) malloc(nlog10k*sizeof(double));
     (*io_z) = (double*) malloc(nz*sizeof(double));
-    (*io_lnP) = (double*) malloc(nz*nlog10k*sizeof(double));
-    if ((*io_log10k) == NULL || (*io_z) == NULL || (*io_lnP) == NULL)
+    (*io_lnP_MM) = (double*) malloc(nz*nlog10k*sizeof(double));
+    if ((*io_log10k) == NULL || (*io_z) == NULL || (*io_lnP_MM) == NULL)
     {
       log_fatal("fail allocation");
       exit(1);
@@ -1010,7 +1010,7 @@ double** io_z, double** io_lnP, int io)
       (*io_log10k)[i] = log10k[i];
       for (int j=0; j<nz; j++)
       {
-        (*io_lnP)[i*nz+j] = lnP[i*nz+j];
+        (*io_lnP_MM)[i*nz+j] = lnP_MM[i*nz+j];
       }
     }
 
@@ -1024,7 +1024,7 @@ double** io_z, double** io_lnP, int io)
         for (int j=0; j<nz; j++)
         {
           const double a = 1.0/(1.0+z[j]);
-          (*io_lnP)[i*nz+j] = log(exp((*io_lnP)[i*nz+j])*PkRatio_baryons(KNL,a));
+          (*io_lnP_MM)[i*nz+j] = log(exp((*io_lnP_MM)[i*nz+j])*PkRatio_baryons(KNL,a));
         }
       }
     }
@@ -1040,7 +1040,7 @@ double** io_z, double** io_lnP_WM, int io)
   static int nz;
   static double* log10k = NULL;
   static double* z = NULL;
-  static double* lnP = NULL;
+  static double* lnP_WM = NULL;
 
   if (io == 1)
   {
@@ -1053,9 +1053,9 @@ double** io_z, double** io_lnP_WM, int io)
     {
       free(z);
     }
-    if (lnP != NULL)
+    if (lnP_WM != NULL)
     {
-      free(lnP);
+      free(lnP_WM);
     }
 
     nlog10k = (*io_nlog10k);
@@ -1069,8 +1069,8 @@ double** io_z, double** io_lnP_WM, int io)
 
     log10k = (double*) malloc(nlog10k*sizeof(double));
     z = (double*) malloc(nz*sizeof(double));
-    lnP = (double*) malloc(nz*nlog10k*sizeof(double));
-    if (log10k == NULL || z == NULL || lnP == NULL)
+    lnP_WM = (double*) malloc(nz*nlog10k*sizeof(double));
+    if (log10k == NULL || z == NULL || lnP_WM == NULL)
     {
       log_fatal("fail allocation");
       exit(1);
@@ -1086,14 +1086,14 @@ double** io_z, double** io_lnP_WM, int io)
       log10k[i] = (*io_log10k)[i];
       for (int j=0; j<nz; j++)
       {
-        lnP[i*nz+j] = (*io_lnP_WM)[i*nz+j];
+        lnP_WM[i*nz+j] = (*io_lnP_WM)[i*nz+j];
       }
     }
   }
   else
   {
     // IO != 1 IMPLES THAT LOCAL PK(Z,K) WILL COPIED TO IO_PK(Z,K)
-    if (log10k == NULL || z == NULL || lnP == NULL)
+    if (log10k == NULL || z == NULL || lnP_WM == NULL)
     {
       log_fatal("input pointer not setup\n");
       exit(1);
@@ -1161,7 +1161,7 @@ double** io_z, double** io_lnP_WM, int io)
       (*io_log10k)[i] = log10k[i];
       for (int j=0; j<nz; j++)
       {
-        (*io_lnP_WM)[i*nz+j] = lnP[i*nz+j];
+        (*io_lnP_WM)[i*nz+j] = lnP_WM[i*nz+j];
       }
     }
 
@@ -1191,7 +1191,7 @@ double** io_z, double** io_lnP_WW, int io)
   static int nz;
   static double* log10k = NULL;
   static double* z = NULL;
-  static double* lnP = NULL;
+  static double* lnP_WW = NULL;
 
   if (io == 1)
   {
@@ -1204,9 +1204,9 @@ double** io_z, double** io_lnP_WW, int io)
     {
       free(z);
     }
-    if (lnP != NULL)
+    if (lnP_WW != NULL)
     {
-      free(lnP);
+      free(lnP_WW);
     }
 
     nlog10k = (*io_nlog10k);
@@ -1220,8 +1220,8 @@ double** io_z, double** io_lnP_WW, int io)
 
     log10k = (double*) malloc(nlog10k*sizeof(double));
     z = (double*) malloc(nz*sizeof(double));
-    lnP = (double*) malloc(nz*nlog10k*sizeof(double));
-    if (log10k == NULL || z == NULL || lnP == NULL)
+    lnP_WW = (double*) malloc(nz*nlog10k*sizeof(double));
+    if (log10k == NULL || z == NULL || lnP_WW == NULL)
     {
       log_fatal("fail allocation");
       exit(1);
@@ -1237,14 +1237,14 @@ double** io_z, double** io_lnP_WW, int io)
       log10k[i] = (*io_log10k)[i];
       for (int j=0; j<nz; j++)
       {
-        lnP[i*nz+j] = (*io_lnP_WW)[i*nz+j];
+        lnP_WW[i*nz+j] = (*io_lnP_WW)[i*nz+j];
       }
     }
   }
   else
   {
     // IO != 1 IMPLES THAT LOCAL PK(Z,K) WILL COPIED TO IO_PK(Z,K)
-    if (log10k == NULL || z == NULL || lnP == NULL)
+    if (log10k == NULL || z == NULL || lnP_WW == NULL)
     {
       log_fatal("input pointer not setup\n");
       exit(1);
@@ -1312,7 +1312,7 @@ double** io_z, double** io_lnP_WW, int io)
       (*io_log10k)[i] = log10k[i];
       for (int j=0; j<nz; j++)
       {
-        (*io_lnP_WW)[i*nz+j] = lnP[i*nz+j];
+        (*io_lnP_WW)[i*nz+j] = lnP_WW[i*nz+j];
       }
     }
 
@@ -1350,13 +1350,13 @@ double p_lin(double io_k, double io_a)
   static double limits_z[2];
   static double** log10k;
   static double** z;
-  static double** lnP;
+  static double** lnP_MM;
   static int nlog10k;
   static int nz;
   if (first == 0)
   {
     z = NULL;
-    lnP = NULL;
+    lnP_MM = NULL;
     log10k = NULL;
     first = 1;
   }
@@ -1379,14 +1379,14 @@ double p_lin(double io_k, double io_a)
     }
     z = (double**) malloc(1*sizeof(double*));
 
-    if (lnP != NULL)
+    if (lnP_MM != NULL)
     {
-      free((*lnP));
-      free(lnP);
+      free((*lnP_MM));
+      free(lnP_MM);
     }
-    lnP = (double**) malloc(1*sizeof(double*));
+    lnP_MM = (double**) malloc(1*sizeof(double*));
 
-    if (log10k == NULL || z == NULL || lnP == NULL)
+    if (log10k == NULL || z == NULL || lnP_MM == NULL)
     {
       log_fatal("fail allocation");
       exit(1);
@@ -1394,9 +1394,9 @@ double p_lin(double io_k, double io_a)
 
     (*log10k) = NULL;
     (*z) = NULL;
-    (*lnP) = NULL;
+    (*lnP_MM) = NULL;
 
-    setup_p_lin(&nlog10k, &nz, log10k, z, lnP, 0);
+    setup_p_lin(&nlog10k, &nz, log10k, z, lnP_MM, 0);
 
     limits_z[0] = z[0][0];
     limits_z[1] = z[0][nz-1];
@@ -1445,8 +1445,8 @@ double p_lin(double io_k, double io_a)
 
   double dy = (tmp_z[0]-(*z)[j])/((*z)[j+1]-(*z)[j]);
 
-  out_lnP[0]=(1-dx)*(1-dy)*(*lnP)[i*nz+j]+(1-dx)*dy*(*lnP)[i*nz+(j+1)]
-                   +dx*(1-dy)*(*lnP)[(i+1)*nz+j]+dx*dy*(*lnP)[(i+1)*nz+(j+1)];
+  out_lnP[0]=(1-dx)*(1-dy)*(*lnP_MM)[i*nz+j]+(1-dx)*dy*(*lnP_MM)[i*nz+(j+1)]
+                   +dx*(1-dy)*(*lnP_MM)[(i+1)*nz+j]+dx*dy*(*lnP_MM)[(i+1)*nz+(j+1)];
 
   // convert from (Mpc/h)^3 to (Mpc/h)^3/(c/H0=100)^3 (dimensioneless)
   return exp(out_lnP[0])/pow(cosmology.coverH0,3.0);
@@ -1464,12 +1464,12 @@ double p_nonlin(double io_k, double io_a)
   static int first = 0;
   static double** log10k;
   static double** z;
-  static double** lnP;
+  static double** lnP_MM;
   static int nlog10k;
   static int nz;
   if (first == 0) {
     z = NULL;
-    lnP = NULL;
+    lnP_MM = NULL;
     log10k = NULL;
     first = 1;
   }
@@ -1490,12 +1490,12 @@ double p_nonlin(double io_k, double io_a)
       free(z);
     }
     z = (double**) malloc(1*sizeof(double*));
-    if (lnP != NULL)
+    if (lnP_MM != NULL)
     {
-      free((*lnP));
-      free(lnP);
+      free((*lnP_MM));
+      free(lnP_MM);
     }
-    lnP = (double**) malloc(1*sizeof(double*));
+    lnP_MM = (double**) malloc(1*sizeof(double*));
 
     if (log10k == NULL)
     {
@@ -1511,14 +1511,14 @@ double p_nonlin(double io_k, double io_a)
     }
     (*z) = NULL;
 
-    if (lnP == NULL)
+    if (lnP_MM == NULL)
     {
       log_fatal("fail allocation");
       exit(1);
     }
-    (*lnP) = NULL;
+    (*lnP_MM) = NULL;
 
-    setup_p_nonlin(&nlog10k, &nz, log10k, z, lnP, 0);
+    setup_p_nonlin(&nlog10k, &nz, log10k, z, lnP_MM, 0);
     limits_z[0] = z[0][0];
     limits_z[1] = z[0][nz-1];
   }
@@ -1561,8 +1561,8 @@ double p_nonlin(double io_k, double io_a)
   }
   double dx = (tmp_log10k[0]-(*log10k)[i])/((*log10k)[i+1]-(*log10k)[i]);
   double dy = (tmp_z[0]-(*z)[j])/((*z)[j+1]-(*z)[j]);
-  out_lnP[0]=(1-dx)*(1-dy)*(*lnP)[i*nz+j]+(1-dx)*dy*(*lnP)[i*nz+(j+1)]
-                   +dx*(1-dy)*(*lnP)[(i+1)*nz+j]+dx*dy*(*lnP)[(i+1)*nz+(j+1)];
+  out_lnP[0]=(1-dx)*(1-dy)*(*lnP_MM)[i*nz+j]+(1-dx)*dy*(*lnP_MM)[i*nz+(j+1)]
+                   +dx*(1-dy)*(*lnP_MM)[(i+1)*nz+j]+dx*dy*(*lnP_MM)[(i+1)*nz+(j+1)];
 
   // convert from (Mpc/h)^3 to (Mpc/h)^3/(c/H0=100)^3 (dimensioneless)
   return exp(out_lnP[0])/pow(cosmology.coverH0,3);
@@ -1601,12 +1601,12 @@ double p_nonlin_weyl_matter(double io_k, double io_a)
   static int first = 0;
   static double** log10k;
   static double** z;
-  static double** lnP;
+  static double** lnP_WM;
   static int nlog10k;
   static int nz;
   if (first == 0) {
     z = NULL;
-    lnP = NULL;
+    lnP_WM = NULL;
     log10k = NULL;
     first = 1;
   }
@@ -1627,12 +1627,12 @@ double p_nonlin_weyl_matter(double io_k, double io_a)
       free(z);
     }
     z = (double**) malloc(1*sizeof(double*));
-    if (lnP != NULL)
+    if (lnP_WM != NULL)
     {
-      free((*lnP));
-      free(lnP);
+      free((*lnP_WM));
+      free(lnP_WM);
     }
-    lnP = (double**) malloc(1*sizeof(double*));
+    lnP_WM = (double**) malloc(1*sizeof(double*));
 
     if (log10k == NULL)
     {
@@ -1648,14 +1648,14 @@ double p_nonlin_weyl_matter(double io_k, double io_a)
     }
     (*z) = NULL;
 
-    if (lnP == NULL)
+    if (lnP_WM == NULL)
     {
       log_fatal("fail allocation");
       exit(1);
     }
-    (*lnP) = NULL;
+    (*lnP_WM) = NULL;
 
-    setup_p_nonlin_weyl_matter(&nlog10k, &nz, log10k, z, lnP, 0);
+    setup_p_nonlin_weyl_matter(&nlog10k, &nz, log10k, z, lnP_WM, 0);
     limits_z[0] = z[0][0];
     limits_z[1] = z[0][nz-1];
   }
@@ -1698,8 +1698,8 @@ double p_nonlin_weyl_matter(double io_k, double io_a)
   }
   double dx = (tmp_log10k[0]-(*log10k)[i])/((*log10k)[i+1]-(*log10k)[i]);
   double dy = (tmp_z[0]-(*z)[j])/((*z)[j+1]-(*z)[j]);
-  out_lnP[0]=(1-dx)*(1-dy)*(*lnP)[i*nz+j]+(1-dx)*dy*(*lnP)[i*nz+(j+1)]
-                   +dx*(1-dy)*(*lnP)[(i+1)*nz+j]+dx*dy*(*lnP)[(i+1)*nz+(j+1)];
+  out_lnP[0]=(1-dx)*(1-dy)*(*lnP_WM)[i*nz+j]+(1-dx)*dy*(*lnP_WM)[i*nz+(j+1)]
+                   +dx*(1-dy)*(*lnP_WM)[(i+1)*nz+j]+dx*dy*(*lnP_WM)[(i+1)*nz+(j+1)];
 
   // convert from (Mpc/h)^3 to (Mpc/h)^3/(c/H0=100)^3 (dimensioneless)
   return exp(out_lnP[0])/pow(cosmology.coverH0,3);
@@ -1737,12 +1737,12 @@ double p_nonlin_weyl_weyl(double io_k, double io_a)
   static int first = 0;
   static double** log10k;
   static double** z;
-  static double** lnP;
+  static double** lnP_WW;
   static int nlog10k;
   static int nz;
   if (first == 0) {
     z = NULL;
-    lnP = NULL;
+    lnP_WW = NULL;
     log10k = NULL;
     first = 1;
   }
@@ -1763,12 +1763,12 @@ double p_nonlin_weyl_weyl(double io_k, double io_a)
       free(z);
     }
     z = (double**) malloc(1*sizeof(double*));
-    if (lnP != NULL)
+    if (lnP_WW != NULL)
     {
-      free((*lnP));
-      free(lnP);
+      free((*lnP_WW));
+      free(lnP_WW);
     }
-    lnP = (double**) malloc(1*sizeof(double*));
+    lnP_WW = (double**) malloc(1*sizeof(double*));
 
     if (log10k == NULL)
     {
@@ -1784,14 +1784,14 @@ double p_nonlin_weyl_weyl(double io_k, double io_a)
     }
     (*z) = NULL;
 
-    if (lnP == NULL)
+    if (lnP_WW == NULL)
     {
       log_fatal("fail allocation");
       exit(1);
     }
-    (*lnP) = NULL;
+    (*lnP_WW) = NULL;
 
-    setup_p_nonlin_weyl_weyl(&nlog10k, &nz, log10k, z, lnP, 0);
+    setup_p_nonlin_weyl_weyl(&nlog10k, &nz, log10k, z, lnP_WW, 0);
     limits_z[0] = z[0][0];
     limits_z[1] = z[0][nz-1];
   }
@@ -1834,8 +1834,8 @@ double p_nonlin_weyl_weyl(double io_k, double io_a)
   }
   double dx = (tmp_log10k[0]-(*log10k)[i])/((*log10k)[i+1]-(*log10k)[i]);
   double dy = (tmp_z[0]-(*z)[j])/((*z)[j+1]-(*z)[j]);
-  out_lnP[0]=(1-dx)*(1-dy)*(*lnP)[i*nz+j]+(1-dx)*dy*(*lnP)[i*nz+(j+1)]
-                   +dx*(1-dy)*(*lnP)[(i+1)*nz+j]+dx*dy*(*lnP)[(i+1)*nz+(j+1)];
+  out_lnP[0]=(1-dx)*(1-dy)*(*lnP_WW)[i*nz+j]+(1-dx)*dy*(*lnP_WW)[i*nz+(j+1)]
+                   +dx*(1-dy)*(*lnP_WW)[(i+1)*nz+j]+dx*dy*(*lnP_WW)[(i+1)*nz+(j+1)];
 
   // convert from (Mpc/h)^3 to (Mpc/h)^3/(c/H0=100)^3 (dimensioneless)
   return exp(out_lnP[0])/pow(cosmology.coverH0,3);

@@ -2525,6 +2525,7 @@ double int_for_C_ss_tomo_limber(double a, void* params)
     {
       const double norm = cosmology.Omega_m*nuisance.c1rhocrit_ia/growfac_a*
         nuisance.A_ia*pow(1./(a*nuisance.oneplusz0_ia), nuisance.eta_ia);
+      // printf("testing, PK/PK_WW = %f", PK / PK_WW); //KZ: testing difference between PK and PK_weyl_weyl
       res = ws1*ws2*norm*norm*PK - (ws1*wk2+ws2*wk1)*norm*PK_WM + wk1*wk2*PK_WW; //KZ: seperate PK for source and shear
 
       break;

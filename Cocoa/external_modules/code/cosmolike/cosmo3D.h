@@ -26,7 +26,7 @@ void setup_chi(int* io_nz, double** io_z, double** io_chi, int io);
 void setup_growth(int* io_nz, double** io_z, double** io_G, int io);
 
 void setup_p_nonlin(int* io_nlog10k, int* io_nz, double** io_log10k,
-                                  double** io_z, double** io_lnP, int io);
+                                  double** io_z, double** io_lnP_MM, int io);
 // KZ begin
 void setup_p_nonlin_weyl_matter(int* io_nlog10k, int* io_nz, double** io_log10k,
                                   double** io_z, double** io_lnP_WM, int io);
@@ -35,7 +35,7 @@ void setup_p_nonlin_weyl_weyl(int* io_nlog10k, int* io_nz, double** io_log10k,
 // KZ end
 
 void setup_p_lin(int* io_nlog10k, int* io_nz, double** io_log10k,
-                                  double** io_z, double** io_lnP, int io);
+                                  double** io_z, double** io_lnP_MM, int io);
 
 double norm_growfac(double io_a, bool normalize_z0);
 
