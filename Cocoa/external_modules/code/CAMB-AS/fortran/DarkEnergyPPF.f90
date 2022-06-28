@@ -34,7 +34,8 @@
     this%cs2_lam = Ini%Read_Double('cs2_lam', 1.d0)
     this%g0_ppf = Ini%Read_Double('g0_ppf', 1.d0) !KZ-edit: read g0 from ini file
     this%c_Gamma_ppf = Ini%Read_Double('c_Gamma_ppf', 1.d0) !KZ-edit: read c_gamma from ini file 
-    this%c_g_ppf = Ini%Read_Double('c_g_ppf', 0.01_dl) !KZ-edit: read c_g from ini file 
+    this%c_g_ppf = Ini%Read_Double('c_g_ppf', 0.01_dl) !KZ-edit: read c_g from ini file
+    this%c_gamma_k_H_square_max = Ini%Read_Double('c_gamma_k_H_square_max', 30.0_dl) !KZ-edit: read c_g from ini file  
     if (this%cs2_lam /= 1.d0) error stop 'cs2_lam not supported by PPF model'
     !call this%setcgammappf
 
@@ -225,7 +226,7 @@
     S_Gamma=S_Gamma-((gppf+fzetappf+gppf*fzetappf)*(grhoT+gpres_noDE) -grhov_t*(1_dl+w))*(VT_comoving)*k/adotoa
     S_Gamma=S_Gamma/2._dl/k2/(1.0_dl + gppf)+ (gprimeppf - 2_dl*gppf)*Phi_minus/(1.0_dl + gppf)
     
-    if (ckH*ckH.gt.30_dl) then ! !KZ-edit: try 10
+    if (ckH*ckH.gt.this%c_gamma_k_H_square_max) then ! !KZ: from class notes: The equation is too stiff for Runge-Kutta when c_gamma_k_H_square is large. Use the asymptotic solution Gamma=Gamma'=0 in that case.
         Gamma=fGppf*Phi_minus
         Gammadot=0._dl
         !S_Gamma = 0.0_dl

@@ -38,11 +38,12 @@ class DarkEnergyEqnOfState(DarkEnergyModel):
         ("g0_ppf", c_double, "PPF-AS parameters"),
         ("c_Gamma_ppf", c_double, "ppf parameter c_Gamma"),
         ("c_g_ppf", c_double, "ppf parameter c_g")
+        ("c_gamma_k_H_square_max", c_double, "ppf parameter c_gamma_k_H_square_max")
     ]
 
     _methods_ = [('SetWTable', [numpy_1d, numpy_1d, POINTER(c_int)])]
 
-    def set_params(self, w=-1.0, wa=0, cs2=1.0, shear_model=1, g0_ppf=0.0, c_Gamma_ppf=1.0, c_g_ppf=0.01):
+    def set_params(self, w=-1.0, wa=0, cs2=1.0, shear_model=1, g0_ppf=0.0, c_Gamma_ppf=1.0, c_g_ppf=0.01, c_gamma_k_H_square_max=30.0):
         """
          Set the parameters so that P(a)/rho(a) = w(a) = w + (1-a)*wa
 
@@ -58,6 +59,7 @@ class DarkEnergyEqnOfState(DarkEnergyModel):
         self.g0_ppf = g0_ppf
         self.c_Gamma_ppf = c_Gamma_ppf
         self.c_g_ppf = c_g_ppf
+        self.c_gamma_k_H_square_max = c_gamma_k_H_square_max
 
     def validate_params(self):
         if not self.use_tabulated_w and self.wa + self.w > 0:
