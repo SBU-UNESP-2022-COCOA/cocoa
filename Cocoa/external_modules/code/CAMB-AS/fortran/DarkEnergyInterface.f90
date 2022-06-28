@@ -34,6 +34,7 @@
         real(dl) :: g0_ppf = 0.0 !KZ-edit: ppf parameter g0
         real(dl) :: c_Gamma_ppf = 1.0 !KZ-edit
         real(dl) :: c_g_ppf = 0.01 !KZ-edit
+        real(dl) :: c_gamma_k_H_square_max = 30.0 !KZ-edit
         !Interpolations if use_tabulated_w=.true.
         Type(TCubicSpline) :: equation_of_state, logdensity
     contains
