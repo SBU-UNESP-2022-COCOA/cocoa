@@ -37,7 +37,7 @@ class DarkEnergyEqnOfState(DarkEnergyModel):
         ("shear_model", c_int, "PPF-AS model"),
         ("g0_ppf", c_double, "PPF-AS parameters"),
         ("c_Gamma_ppf", c_double, "ppf parameter c_Gamma"),
-        ("c_g_ppf", c_double, "ppf parameter c_g")
+        ("c_g_ppf", c_double, "ppf parameter c_g"),
         ("c_gamma_k_H_square_max", c_double, "ppf parameter c_gamma_k_H_square_max")
     ]
 
