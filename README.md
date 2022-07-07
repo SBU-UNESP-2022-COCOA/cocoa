@@ -5,20 +5,11 @@
 3. [Installation of Cocoa's required packages](#required_packages)
     1. [Via Conda (best for Linux)](#required_packages_conda)
     2. [Via Docker (best for MacOS/Windows)](#required_packages_docker)
-    3. [(expert) Via Cocoa's internal cache](#required_packages_cache)
-<<<<<<< HEAD
-3. [Installation of Cobaya base code](#cobaya_base_code)
-4. [Running Cobaya Examples](#cobaya_base_code_examples) 
-5. [Running Cosmolike projects](#running_cosmolike_projects)
-6. [Creating Cosmolike projects](#creating_cosmolike_projects)
-7. [Appendix](#appendix)
-=======
 4. [Installation of Cobaya base code](#cobaya_base_code)
 5. [Running Cobaya Examples](#cobaya_base_code_examples)
 6. [Running Cosmolike projects](#running_cosmolike_projects)
 7. [Creating Cosmolike projects](#creating_cosmolike_projects)
 8. [Appendix](#appendix)
->>>>>>> main
     1. [Proper Credits](#appendix_proper_credits)
     1. [Compiling Boltzmann, CosmoLike and Likelihood codes separatelly](#appendix_compile_separatelly)
     2. [Running Jupyter Notebooks inside the Whovian-Cosmo docker container](#appendix_jupyter_whovian)
@@ -153,76 +144,6 @@ Linux users must type the following command instead:
 This command will download the [Whovian-Cosmo](https://hub.docker.com/r/vivianmiranda/whovian-cosmo) image and convert it to a format that can be understood by Singularity (this might take a few minutes). To run the container interactively, type:
 
     $ singularity shell --no-home --bind /path/to/cocoa:/home/whovian/host --bind ~/.ssh:/home/whovian/.ssh:ro whovian-cosmo
-
-**Users can now proceed to the section [Installation of Cobaya base code](#cobaya_base_code)**
-
-### (expert) Via Cocoa's internal cache <a name="required_packages_cache"></a>
-
-(**Warning**) This method is slow, not advisable. It does, however, provide the experienced user more flexibility in choosing the compiler, python and package version. Another advantage to the experienced user is that OpenMPI provided by [conda-forge](https://conda-forge.org) is [incompatible with Infiniband]((https://github.com/conda-forge/openmpi-feedstock/issues/38)). Flexibility may indeed render more optimal runtimes at the expense of some additional headaches! 
-
-Whenever Conda or Docker installation procedures are unavailable, the user can still perform a local semi-autonomous installation on Linux based on a few scripts we implemented. We also provide a local copy of almost all required packages on Cocoa's cache folder named [cocoa_installation_libraries](https://github.com/CosmoLike/cocoa/tree/main/cocoa_installation_libraries) (there are HPC machines where compute nodes don't have internet access, NASA Pleiades being one example). We, therefore, only assume the pre-installation of the following packages to perform the local setup via Cocoa's internal cache:
-
-   - [Bash](https://www.amazon.com/dp/B0043GXMSY/ref=cm_sw_em_r_mt_dp_x3UoFbDXSXRBT);
-   - [Git](https://git-scm.com) v1.8+;
-   - [Git LFS](https://git-lfs.github.com);
-   - [gcc](https://gcc.gnu.org) v10.*;
-   - [gfortran](https://gcc.gnu.org) v10.*;
-   - [g++](https://gcc.gnu.org) v10.*;
-   - [Python](https://www.python.org) v3.7.*;
-   - [PIP package manager](https://pip.pypa.io/en/stable/installing/)
-   - [Python Virtual Environment](https://www.geeksforgeeks.org/python-virtual-environment/)
-
-To perform the local semi-autonomous installation, users should follow the procedures on section [Installation of cocoa base code](https://github.com/CosmoLike/cocoa#installation-of-cocoa-base-code), adding, however, the many additional configurations on [set_installation_options](https://github.com/CosmoLike/cocoa/blob/main/Cocoa/set_installation_options) script that are explained below.
-
-The local installation via cocoa's internal cache is selected whenever the environmental key `MANUAL_INSTALLATION` is set:
-
-    [Extracted from set_installation_options script] 
-    
-    #  ---------------------------------------------------------------------------
-    # HOW COCOA BE INSTALLED? -------------------------------
-
-    #export DOCKER_INSTALLATION=1
-    #export MINICONDA_INSTALLATION=1
-    export MANUAL_INSTALLATION=1
-    
-The user also needs to set the following self-explanatory environmental keys on [set_installation_options](https://github.com/CosmoLike/cocoa/blob/main/Cocoa/set_installation_options):
- 
-    [Extracted from set_installation_options script]
-  
-    elif [ -n "${MANUAL_INSTALLATION}" ]; then
-
-      export GLOBAL_PACKAGES_LOCATION=/usr/local
-      export PYTHON_VERSION=3
-      export FORTRAN_COMPILER=gfortran
-    
-      export C_COMPILER=gcc
-      export CXX_COMPILER=g++
-      export GLOBALPYTHON3=python3
-      export MPI_FORTRAN_COMPILER=mpif90
-      export MPI_CXX_COMPILER=mpicc
-      export MPI_CC_COMPILER=mpicxx
-    
-      # In case global packages are available 
-      #export IGNORE_DISTUTILS_INSTALLATION=1
-      #export IGNORE_OPENBLAS_INSTALLATION=1
-      #export IGNORE_XZ_INSTALLATION=1
-      #export IGNORE_ALL_PIP_INSTALLATION=1
-      #export IGNORE_CMAKE_INSTALLATION=1
-      #export IGNORE_CPP_BOOST_INSTALLATION=1
-      #export IGNORE_CPP_ARMA_INSTALLATION=1
-      #export IGNORE_CPP_SPDLOG_INSTALLATION=1
-      #export IGNORE_C_GSL_INSTALLATION=1
-      #export IGNORE_C_CFITSIO_INSTALLATION=1
-      #export IGNORE_C_FFTW_INSTALLATION=1 
-      #export IGNORE_OPENBLAS_INSTALLATION=1
-      #export IGNORE_FORTRAN_LAPACK_INSTALLATION=1
-   
-(**expert**) Our scripts never install packages on `$HOME/.local`. Doing so could impose incompatibilities between Cobaya and different projects (or break the user's environment for other projects). All requirements for Cocoa are installed at
-
-    Cocoa/.local/bin
-    Cocoa/.local/include
-    Cocoa/.local/lib
-    Cocoa/.local/share
 
 **Users can now proceed to the section [Installation of Cobaya base code](#cobaya_base_code)**
 
