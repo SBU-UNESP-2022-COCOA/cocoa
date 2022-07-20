@@ -26,7 +26,8 @@ if [ -z "${IGNORE_OPENBLAS_INSTALLATION}" ]; then
     cd $ROOTDIR/../cocoa_installation_libraries/OpenBLAS
 
     export MAKE_NB_JOBS=$MAKE_NUM_THREADS
-    
+    make clean > /dev/null 2> /dev/null
+
     make CC=$C_COMPILER FC=$FORTRAN_COMPILER USE_OPENMP=1 > /dev/null 2> /dev/null
     if [ $? -eq 0 ] 
     then

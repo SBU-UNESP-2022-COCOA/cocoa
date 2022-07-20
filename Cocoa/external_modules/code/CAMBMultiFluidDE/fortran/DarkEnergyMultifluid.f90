@@ -7,11 +7,11 @@ module MultiFluidDE
 
   private
   ! JVR - can we use these quantities from results.f90 without needing to bring them to this file via the Init subroutine?
-  real(dl) :: grhocrit
-  real(dl) :: grhode_today
-  real(dl) :: Omega_de
-  real(dl), parameter :: Tpl= sqrt(kappa*hbar/c**5)  ! sqrt(8 pi G hbar/c^5), reduced planck time
-  real(dl), parameter :: units = MPC_in_sec**2 /Tpl**2  ! Convert to units of 1/Mpc^2
+  real(dl) :: grhocrit ! Critical energy density today
+  real(dl) :: grhode_today ! Total dark energy density today, equals grhocrit * (1 - Omega_baryons - Omega_cdm - Omega_photons - Omega_massless_nu - Omega_massive_nu)
+  real(dl) :: Omega_de ! Dark energy fraction today
+  real(dl), parameter :: Tpl= sqrt(kappa*hbar/c**5)  ! sqrt(8 pi G hbar/c^5), reduced Planck time
+  real(dl), parameter :: units = MPC_in_sec**2 /Tpl**2  ! Conversion factor to units of 1/Mpc^2
 
   type, extends(TDarkEnergyModel) :: TMultiFluidDE
     integer :: DebugLevel
@@ -19,10 +19,10 @@ module MultiFluidDE
     ! JVR - TODO go back to a parameter array
     ! JVR - model parameters
     real(dl) :: w0, wa ! CPL parameters
-    real(dl) :: w1, w2, w3, z1, z2, z3 ! Binned w
+    real(dl) :: w1, w2, w3, w4, w5, z1, z2, z3, z4, z5 ! Binned w
     real(dl) :: zc, fde_zc, theta_i, wn ! Fluid EDE parameters
     real(dl) :: n, grhonode_zc, freq ! Fluid EDE internal parameters
-    real(dl) :: fac1, fac2, fac3 ! Binned w factors
+    real(dl) :: fac1, fac2, fac3, fac4, fac5 ! Binned w factors
   contains
   procedure :: Init => TMultiFluidDE_Init
   procedure :: w_de => TMultiFluidDE_w_de
@@ -65,7 +65,7 @@ module MultiFluidDE
           ! w0wa with PPF - allows phantom divide crossing
           w_de(i) = this%w0 + this%wa * (1-a)
         else if (this%models(i) == 3) then
-          ! Binned w model
+          ! Binned w model, 3 bins
           z = 1._dl/a - 1._dl
           if (z < this%z1) then
             w_de(i) = this%w0
@@ -75,6 +75,22 @@ module MultiFluidDE
             w_de(i) = this%w2
           else
             w_de(i) = this%w3
+          end if
+        else if (this%models(i) == 4) then
+          ! Binned w model, 5 bins
+          z = 1._dl/a - 1._dl
+          if (z < this%z1) then
+            w_de(i) = this%w0
+          else if (z < this%z2) then
+            w_de(i) = this%w1
+          else if (z < this%z3) then
+            w_de(i) = this%w2
+          else if (z < this%z4) then
+            w_de(i) = this%w3
+          else if (z < this%z5) then
+            w_de(i) = this%w4
+          else
+            w_de(i) = this%w5
           end if
         else
           stop "[Multifluid DE] Invalid dark energy model for fluid 1"
@@ -129,7 +145,7 @@ module MultiFluidDE
           wa = this%wa
           grho_de(i) = grho_late_today * a**(-3*(1 + w0 + wa)) * exp(-3 * wa * (1-a))
         else if (this%models(i) == 3) then
-          ! Binned w model
+          ! Binned w model, 3 bins
           z = 1._dl/a - 1
           if (z < this%z1) then
             grho_de(i) = grho_late_today * a**(-3*(1 + this%w0))
@@ -139,6 +155,22 @@ module MultiFluidDE
             grho_de(i) = grho_late_today * this%fac2 * (a * (1+this%z2))**(-3*(1 + this%w2)) ! They are the necessary factors to make grho_de continuous
           else
             grho_de(i) = grho_late_today * this%fac3 * (a * (1+this%z3))**(-3*(1 + this%w3))
+          end if
+        else if (this%models(i) == 4) then
+          ! Binned w model, 5 bins
+          z = 1._dl/a - 1
+          if (z < this%z1) then
+            grho_de(i) = grho_late_today * a**(-3*(1 + this%w0))
+          else if (z < this%z2) then
+            grho_de(i) = grho_late_today * this%fac1 * (a * (1+this%z1))**(-3*(1 + this%w1)) ! See fac1, fac2 and fac3 on init
+          else if (z < this%z3) then
+            grho_de(i) = grho_late_today * this%fac2 * (a * (1+this%z2))**(-3*(1 + this%w2)) ! They are the necessary factors to make grho_de continuous
+          else if (z < this%z4) then
+            grho_de(i) = grho_late_today * this%fac3 * (a * (1+this%z3))**(-3*(1 + this%w3))
+          else if (z < this%z5) then
+            grho_de(i) = grho_late_today * this%fac4 * (a * (1+this%z4))**(-3*(1 + this%w4))
+          else
+            grho_de(i) = grho_late_today * this%fac5 * (a * (1+this%z5))**(-3*(1 + this%w5))
           end if
         else
           stop "[Multifluid DE] Invalid dark energy model for fluid 1"
@@ -200,18 +232,20 @@ module MultiFluidDE
     integer, intent(in) :: w_ix
     real(dl) :: phi, phidot, delta_phi, delta_phi_prime
     integer :: i, delta_index
+    logical :: use_ppf
 
     ! TODO clean variables
     dgrhoe = 0
     dgqe = 0
+    use_ppf = (this%models(1) == 2 .or. this%models(1) == 3 .or. this%models(1)==4) ! If using a model with PPF, this is true
     do i=1, this%num_of_components
       delta_index = w_ix + 2*(i - 1)
-      if (i == 1 .and. (this%models(1) == 2) .or. this%models(1) == 3) then ! w0wa requires PPF
+      if (i == 1 .and. use_ppf) then ! w0wa and binw requires PPF
         call PPF_Perturbations(this, dgrhoe, dgqe, &
         a, dgq, dgrho, grho, grhov_t, w, gpres_noDE, &
         etak, adotoa, k, kf1, ay, ayprime, w_ix)
       else
-        if (this%models(1) == 2) then
+        if (use_ppf) then
           delta_index = delta_index - 1 ! PPF has only one perturbation equation, so I need to decrease one index
         end if
 
@@ -272,13 +306,16 @@ module MultiFluidDE
     real(dl) :: Hv3_over_k, v, delta, fac
     real(dl) :: cs2, phi, phidot, delta_phi, delta_phi_prime
     integer :: i, delta_index
+    logical :: use_ppf
+
+    use_ppf = (this%models(1)==2 .or. this%models(1)==3 .or. this%models(1)==4)
 
     ! Fluid equations in synchronous gauge https://arxiv.org/pdf/1806.10608.pdf
     ! Assuming cs_2 = 1 for all fluids
     ! PPF has only one equation for Gamma and it is initialized in the PerturbedStressEnergy subroutine
     do i=1, this%num_of_components
       delta_index = w_ix + 2*(i-1)
-      if (this%models(1) == 2 .or. this%models(1) == 3) then
+      if (use_ppf) then
         delta_index = delta_index - 1 ! PPF has one less equation
         if (i == 1) then
           cycle ! The PPF evolution equations are defined in another function
@@ -328,6 +365,9 @@ module MultiFluidDE
       w = this%w0
       wa = this%wa
     else if (this%models(1) == 3) then
+      w = this%w0
+      wa = 0
+    else if (this%models(1) == 4) then
       w = this%w0
       wa = 0
     else
@@ -426,16 +466,24 @@ module MultiFluidDE
 
     this%is_cosmological_constant = .false.
     this%num_perturb_equations = 2 * this%num_of_components
-    if (this%models(1) == 2) then
-      this%num_perturb_equations = this%num_perturb_equations - 1
+    if (this%models(1) == 2 .or. this%models(1) == 3 .or. this%models(1) == 4) then
+      this%num_perturb_equations = this%num_perturb_equations - 1 ! PPF only has one equation
     end if
 
     ac = 1._dl/(1+this%zc)
 
-    if (this%models(1)==3) then
-      this%fac3 = (1+this%z1)**(3*(1 + this%w0)) * ((1+this%z2)/(1+this%z1))**(3*(1+this%w1)) * ((1+this%z3) / (1+this%z2))**(3*(1 + this%w2))
-      this%fac2 = (1+this%z1)**(3*(1 + this%w0)) * ((1+this%z2)/(1+this%z1))**(3*(1+this%w1))
+    if (this%models(1)==3) then ! Precalculate some lengthy factors
       this%fac1 = (1+this%z1)**(3*(1 + this%w0))
+      this%fac2 = this%fac1 * ((1+this%z2) / (1+this%z1))**(3*(1 + this%w1))
+      this%fac3 = this%fac2 * ((1+this%z3) / (1+this%z2))**(3*(1 + this%w2))
+    end if
+
+    if (this%models(1)==4) then ! Precalculate some lengthy factors
+      this%fac1 = (1+this%z1)**(3*(1 + this%w0))
+      this%fac2 = this%fac1 * ((1+this%z2) / (1+this%z1))**(3*(1 + this%w1))
+      this%fac3 = this%fac2 * ((1+this%z3) / (1+this%z2))**(3*(1 + this%w2))
+      this%fac4 = this%fac3 * ((1+this%z4) / (1+this%z3))**(3*(1 + this%w3))
+      this%fac5 = this%fac4 * ((1+this%z5) / (1+this%z4))**(3*(1 + this%w4))
     end if
 
     select type (State)

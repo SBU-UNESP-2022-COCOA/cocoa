@@ -47,6 +47,7 @@
     module NonLinear
     use results
     use DarkEnergyInterface
+    use MultiFluidDE
     use classes
     use Transfer
     use constants
@@ -3409,39 +3410,89 @@
     subroutine PKequal(State,redshift,w_lam,wa_ppf,w_hf,wa_hf)
     !used by halofit_casarini: arXiv:0810.0190, arXiv:1601.07230
     Type(CAMBdata) :: State, State2
-    Type(TDarkEnergyEqnOfState) :: w_const_type
+    Type(TMultiFluidDE) :: w_const_type ! initializer for dark energy model with constant w
     real(dl) :: redshift,w_lam,wa_ppf,w_hf,wa_hf
     real(dl) :: z_star,tau_star,dlsb,dlsb_eq,w_true,wa_true,error
 
     ! State = our model
     ! State2 = w_const
 
-    State2 = State
-    w_const_type%w_lam = -0.9 ! initial value
-    w_const_type%is_cosmological_constant = .false.
-    State2%CP%DarkEnergy = w_const_type
+    z_star=State%ThermoDerivedParams( derived_zstar ) ! decoupling redshift in original model
+    tau_star=State%TimeOfz(z_star) ! decoupling conformal time in original model
+    dlsb=State%TimeOfz(redshift)-tau_star ! "distance" (conformal time) to last scattering surface in our model
 
-    z_star=State%ThermoDerivedParams( derived_zstar ) ! decoupling - quintessence
-    tau_star=State%TimeOfz(z_star)
-    dlsb=State%TimeOfz(redshift)-tau_star ! "distance" (conformal time) to last scattering surface
+    State2 = State ! Define another state with same cosmological parameters
+    w_const_type%w0 = -0.9 ! initial value
+    w_const_type%is_cosmological_constant = .false.
+    w_const_type%num_of_components = 1
+    w_const_type%models = [1,1,0,0]
+    State2%CP%DarkEnergy = w_const_type ! Change State2 dark energy model to constant w
+
     w_true=w_lam 
     wa_true=wa_ppf
     wa_ppf=0._dl
     do
-        z_star=State2%ThermoDerivedParams( derived_zstar )
-        tau_star=State2%TimeOfz(State2%ThermoData%z_star)
-        dlsb_eq=State2%TimeOfz(redshift)-tau_star
-        error=1.d0-dlsb_eq/dlsb
-        if (abs(error) <= 1d-7) exit
-        w_lam=w_lam*(1+error)**10.d0
-        w_const_type%w_lam = w_lam
-        State2%CP%DarkEnergy = w_const_type
+        z_star = State2%ThermoDerivedParams( derived_zstar ) ! redshift of decoupling in w_const model
+        tau_star = State2%TimeOfz(State2%ThermoData%z_star) ! conformal time of decoupling in w_const model
+        dlsb_eq = State2%TimeOfz(redshift)-tau_star ! distance to last scattering in w_const model
+        error = 1.d0 - dlsb_eq/dlsb ! shooting error
+        if (abs(error) <= 1d-7) exit ! will only exit the loop when the error hits this treshold
+        ! if error > 0, this means that our w_const model has a distance smaller than what we wanted
+        ! thus, we need to decrease w to make the universe expand faster (because smaller w accelerates the expansion)
+        w_lam = w_lam*(1+error)**10.d0 ! adjusting w by a factor
+        w_const_type%w0 = w_lam ! changing the w_const of the model
+        State2%CP%DarkEnergy = w_const_type ! passing the DE model to the state
     enddo
     w_hf=w_lam
     wa_hf=0._dl
     w_lam=w_true
     wa_ppf=wa_true
-    write(*,*)'at z = ',real(redshift),' equivalent w_const =', real(w_hf)
+    !  write(*,*)'[casarini] At z = ',real(redshift),' equivalent w_const =', real(w_hf)
     end subroutine PKequal
+
+    ! subroutine PKequal(State,redshift,w_lam,wa_ppf,w_hf,wa_hf)
+    ! !used by halofit_casarini: arXiv:0810.0190, arXiv:1601.07230
+    ! Type(CAMBdata) :: State
+    ! class(TDarkEnergyModel), allocatable :: original_model
+    ! Type(TMultiFluidDE) :: w_const_type ! initializer for dark energy model with constant w
+    ! real(dl) :: redshift,w_lam,wa_ppf,w_hf,wa_hf
+    ! real(dl) :: z_star,tau_star,dlsb,dlsb_eq,w_true,wa_true,error
+
+    
+    ! z_star = State%ThermoDerivedParams( derived_zstar ) ! decoupling redshift in original model
+    ! tau_star = State%TimeOfz(z_star) ! decoupling conformal time in original model
+    ! dlsb = State%TimeOfz(redshift)-tau_star ! "distance" (conformal time) to last scattering surface in our model
+
+    ! original_model = State%CP%DarkEnergy ! Stores the original DE model
+
+    ! w_const_type%w0 = -0.9 ! initial value
+    ! w_const_type%is_cosmological_constant = .false.
+    ! w_const_type%num_of_components = 1
+    ! w_const_type%models = [1,1,0,0]
+    ! State%CP%DarkEnergy = w_const_type ! Change State dark energy model to constant w
+
+    ! w_true=w_lam 
+    ! wa_true=wa_ppf
+    ! wa_ppf=0._dl
+    ! do
+    !     z_star = State%ThermoDerivedParams( derived_zstar ) ! redshift of decoupling in w_const model
+    !     tau_star = State%TimeOfz(z_star) ! conformal time of decoupling in w_const model
+    !     dlsb_eq = State%TimeOfz(redshift) - tau_star ! distance to last scattering in w_const model
+    !     error = 1.d0 - dlsb_eq/dlsb ! shooting error
+    !     if (abs(error) <= 1d-7) exit ! will only exit the loop when the error hits this treshold
+    !     ! if error > 0, this means that our w_const model has a distance smaller than what we wanted
+    !     ! thus, we need to decrease w to make the universe expand faster (because smaller w accelerates the expansion)
+    !     w_lam = w_lam*(1+error)**10.d0 ! adjusting w by a factor
+    !     w_const_type%w0 = w_lam ! changing the w_const of the model
+    !     State%CP%DarkEnergy = w_const_type ! passing the DE model to the state
+    ! enddo
+    ! w_hf=w_lam
+    ! wa_hf=0._dl
+    ! w_lam=w_true
+    ! wa_ppf=wa_true
+    ! State%CP%DarkEnergy = original_model
+    ! deallocate(original_model)
+    ! write(*,*)'[casarini] At z = ',real(redshift),' equivalent w_const =', real(w_hf)
+    ! end subroutine PKequal
 
     end module NonLinear
