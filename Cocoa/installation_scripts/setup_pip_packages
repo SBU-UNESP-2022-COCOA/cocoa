@@ -89,6 +89,12 @@ if [ -z "${IGNORE_ALL_PIP_INSTALLATION}" ]; then
     return 1
   fi
 
+  env CXX=$CXX_COMPILER CC=$C_COMPILER $PIP3 install pip --upgrade --prefix=$ROOTDIR/.local --find-links file:$ROOTDIR/../cocoa_installation_libraries/pip_cache --no-index > /dev/null 2> /dev/null
+  if [ $? -ne 0 ]; then
+    echo "PROBLEM PIP pip"
+    return 1
+  fi
+
   env CXX=$CXX_COMPILER CC=$C_COMPILER $PIP3 install packaging --upgrade --prefix=$ROOTDIR/.local --find-links file:$ROOTDIR/../cocoa_installation_libraries/pip_cache --no-index > /dev/null 2> /dev/null 
   if [ $? -ne 0 ]; then
     echo "PROBLEM PIP packaging"
@@ -294,6 +300,12 @@ if [ -z "${IGNORE_ALL_PIP_INSTALLATION}" ]; then
   fi
 
   env CXX=$CXX_COMPILER CC=$C_COMPILER  $PIP3 install $ROOTDIR/../cocoa_installation_libraries/pip_cache/syslibrary --upgrade  --prefix=$ROOTDIR/.local --no-index > /dev/null 2> /dev/null  
+  if [ $? -ne 0 ]; then
+    echo "PROBLEM PIP syslibrary"
+    return 1
+  fi
+
+  env CXX=$CXX_COMPILER CC=$C_COMPILER  $PIP3 install --global-option=build_ext $ROOTDIR/../cocoa_installation_libraries/euclidemu2-1.2.0 --upgrade  --no-dependencies --prefix=$ROOTDIR/.local --no-index > /dev/null 2> /dev/null  
   if [ $? -ne 0 ]; then
     echo "PROBLEM PIP syslibrary"
     return 1
