@@ -10,7 +10,7 @@ core.*
 *.egg-info/
 *.out
 
-Cocoa/external_modules/code/planck/code/spt_clik/svnversion
+#Cocoa/external_modules/code/planck/code/spt_clik/svnversion
 Cocoa/external_modules/code/PolyChordLite/dist/
 Cocoa/external_modules/code/PolyChordLite/dist/pypolychord-1.20.0-py3.7-linux-x86_64.egg
 cobaya/cobaya/likelihoods/.gitignore
