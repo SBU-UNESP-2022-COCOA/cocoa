@@ -112,19 +112,18 @@ double xi_pm_tomo(const int pm, const int nt, const int ni, const int nj, const 
     Glplus = (double**) malloc(sizeof(double*)*ntheta);
     for (int i=0; i<ntheta; i++) 
     {
-      Glplus[i] = (double*) malloc(sizeof(double)*nell);
+      Glplus[i] = (double*) calloc(nell, sizeof(double));
     }
     Glminus = (double**) malloc(sizeof(double*)*ntheta);
     for (int i=0; i<ntheta; i++) 
     {
-      Glminus[i] = (double*) malloc(sizeof(double)*nell);
+      Glminus[i] = (double*) calloc(nell, sizeof(double));
     }
-    xi_vec_plus = (double*) malloc(sizeof(double)*NSIZE*ntheta);
-    xi_vec_minus = (double*) malloc(sizeof(double)*NSIZE*ntheta);
+    xi_vec_plus = (double*) calloc(NSIZE*ntheta, sizeof(double));
+    xi_vec_minus = (double*) calloc(NSIZE*ntheta, sizeof(double));
 
     double xmin[ntheta];
     double xmax[ntheta];
-
     for (int i=0; i<ntheta; i++)
     { // Cocoa: dont thread (init of static variables inside set_bin_average)
       bin_avg r = set_bin_average(i,0);
@@ -138,10 +137,10 @@ double xi_pm_tomo(const int pm, const int nt, const int ni, const int nj, const 
     double** dPmax = (double**) malloc(sizeof(double)*ntheta);
     for (int i=0; i<ntheta; i ++)
     {
-      Pmin[i] = (double*) malloc(sizeof(double)*(nell + 1));
-      Pmax[i] = (double*) malloc(sizeof(double)*(nell + 1));
-      dPmin[i] = (double*) malloc(sizeof(double)*(nell + 1));
-      dPmax[i] = (double*) malloc(sizeof(double)*(nell + 1));
+      Pmin[i] = (double*) calloc((nell + 1), sizeof(double));
+      Pmax[i] = (double*) calloc((nell + 1), sizeof(double));
+      dPmin[i] = (double*) calloc((nell + 1), sizeof(double));
+      dPmax[i] = (double*) calloc((nell + 1), sizeof(double));
     }
     #pragma omp parallel for collapse(2)
     for (int i=0; i<ntheta; i ++)
@@ -158,7 +157,7 @@ double xi_pm_tomo(const int pm, const int nt, const int ni, const int nj, const 
     #pragma omp parallel for collapse(2)
     for (int i=0; i<ntheta; i ++)
     {
-      for (int l=3; l<nell; l++)
+      for (int l=1; l<nell; l++)
       {
         Glplus[i][l] = (2.*l+1)/(2.*M_PI*l*l*(l+1)*(l+1))*(
           -l*(l-1.)/2*(l+2./(2*l+1)) * (Pmin[i][l-1]-Pmax[i][l-1])
@@ -370,9 +369,9 @@ double w_gammat_tomo(const int nt, const int ni, const int nj, const int limber)
     Pl = (double**) malloc(sizeof(double*)*ntheta);
     for (int i=0; i<ntheta; i++) 
     {
-      Pl[i] = (double*) malloc(sizeof(double)*nell);
+      Pl[i] = (double*) calloc(nell, sizeof(double));
     }
-    w_vec = (double*) malloc(sizeof(double)*NSIZE*ntheta); 
+    w_vec = (double*) calloc(NSIZE*ntheta, sizeof(double)); 
     double xmin[ntheta];
     double xmax[ntheta];
     // Cocoa: dont thread (init of static variables inside set_bin_average)
@@ -387,8 +386,8 @@ double w_gammat_tomo(const int nt, const int ni, const int nj, const int limber)
     double** Pmax = (double**) malloc(sizeof(double)*ntheta);
     for (int i=0; i<ntheta; i++)
     {
-      Pmin[i] = (double*) malloc(sizeof(double)*(nell + 1));
-      Pmax[i] = (double*) malloc(sizeof(double)*(nell + 1));
+      Pmin[i] = (double*) calloc((nell + 1), sizeof(double));
+      Pmax[i] = (double*) calloc((nell + 1), sizeof(double));
     }
     #pragma omp parallel for collapse(2)
     for (int i=0; i<ntheta; i ++)
@@ -536,9 +535,9 @@ double w_gg_tomo(const int nt, const int ni, const int nj, const int limber)
     Pl = (double**) malloc(sizeof(double*)*ntheta);
     for (int i=0; i<ntheta; i++) 
     {
-      Pl[i] = (double*) malloc(sizeof(double)*nell);
+      Pl[i] = (double*) calloc(nell, sizeof(double));
     }
-    w_vec = (double*) malloc(sizeof(double)*NSIZE*ntheta);
+    w_vec = (double*) calloc(NSIZE*ntheta, sizeof(double));
     double xmin[ntheta];
     double xmax[ntheta];
     // Cocoa: dont thread (init of static variables inside set_bin_average)
@@ -552,8 +551,8 @@ double w_gg_tomo(const int nt, const int ni, const int nj, const int limber)
     double** Pmax = (double**) malloc(sizeof(double)*ntheta);
     for (int i=0; i<ntheta; i ++)
     {
-      Pmin[i] = (double*) malloc(sizeof(double)*(nell + 1));
-      Pmax[i] = (double*) malloc(sizeof(double)*(nell + 1));
+      Pmin[i] = (double*) calloc((nell + 1), sizeof(double));
+      Pmax[i] = (double*) calloc((nell + 1), sizeof(double));
     }
     #pragma omp parallel for
     for (int i=0; i<ntheta; i ++)
@@ -704,9 +703,9 @@ double w_gk_tomo(const int nt, const int ni, const int limber)
     Pl = (double**) malloc(sizeof(double*)*ntheta);
     for (int i=0; i<ntheta; i++) 
     {
-      Pl[i] = (double*) malloc(sizeof(double)*nell);
+      Pl[i] = (double*) calloc(nell, sizeof(double));
     }
-    w_vec = (double*) malloc(sizeof(double)*NSIZE*ntheta);
+    w_vec = (double*) calloc(NSIZE*ntheta, sizeof(double));
     double xmin[ntheta];
     double xmax[ntheta];
     // Cocoa: dont thread (init of static variables inside set_bin_average)
@@ -720,8 +719,8 @@ double w_gk_tomo(const int nt, const int ni, const int limber)
     double** Pmax = (double**) malloc(sizeof(double)*ntheta);
     for (int i=0; i<ntheta; i ++)
     {
-      Pmin[i] = (double*) malloc(sizeof(double)*(nell + 1));
-      Pmax[i] = (double*) malloc(sizeof(double)*(nell + 1));
+      Pmin[i] = (double*) calloc((nell + 1), sizeof(double));
+      Pmax[i] = (double*) calloc((nell + 1), sizeof(double));
     }
     #pragma omp parallel for
     for (int i=0; i<ntheta; i++)
@@ -838,12 +837,12 @@ double w_ks_tomo(const int nt, const int ni, const int limber)
 
   if (Pl == 0)
   {
-    Pl = (double**) malloc(sizeof(double*)*ntheta);
+    Pl = (double**) calloc(ntheta, sizeof(double*));
     for (int i=0; i<ntheta; i++) 
     {
-      Pl[i] = (double*) malloc(sizeof(double)*nell);
+      Pl[i] = (double*) calloc(nell, sizeof(double));
     }
-    w_vec = (double*) malloc(sizeof(double)*NSIZE*ntheta);
+    w_vec = (double*) calloc(NSIZE*ntheta, sizeof(double));
     double xmin[ntheta];
     double xmax[ntheta];
     // Cocoa: dont thread (init of static variables inside set_bin_average)
@@ -856,8 +855,8 @@ double w_ks_tomo(const int nt, const int ni, const int limber)
     #pragma omp parallel for
     for (int i=0; i<ntheta; i++)
     {
-      double* Pmin = (double*) malloc(sizeof(double)*(nell + 1));
-      double* Pmax = (double*) malloc(sizeof(double)*(nell + 1));
+      double* Pmin = (double*) calloc((nell + 1), sizeof(double));
+      double* Pmax = (double*) calloc((nell + 1), sizeof(double));
       for (int l=0; l<nell; l++)
       {
         bin_avg r = set_bin_average(i,l);
@@ -978,7 +977,7 @@ double xi_pm_tomo_flatsky(int pm, double theta, int ni, int nj, int limber)
     table = (double**) malloc(sizeof(double*)*2*NSIZE);  // 2 NSIZE = {xi+, xi-}
     for (int i=0; i<2*NSIZE; i++) 
     {
-      table[i] = (double*) malloc(sizeof(double)*ntheta);
+      table[i] = (double*) calloc(ntheta, sizeof(double));
     }
   }
   if (recompute_shear(C, N))
@@ -3437,7 +3436,6 @@ double C_gg_tomo_limber(double l, int ni, int nj)
         table[k][p] = (res <= 0) ? -100 : log(res);
       }
     }
-    
     update_galpara(&G);
     update_cosmopara(&C);
     update_nuisance(&N);
@@ -3804,7 +3802,6 @@ double int_for_C_ks_limber(double a, void* params)
       const double OMM = cosmology.Omega_m_growth;
       const double norm = (OMM*nuisance.c1rhocrit_ia/growfac_a)*
         nuisance.A_ia*pow(1.0/(a*nuisance.oneplusz0_ia), nuisance.eta_ia);
-
       res = -(WS1*WK2*norm + WK1*WK2);
 
       break;

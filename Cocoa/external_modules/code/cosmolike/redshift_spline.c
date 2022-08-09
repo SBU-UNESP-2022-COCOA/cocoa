@@ -2444,7 +2444,6 @@ double g_tomo(double ainput, int ni) // for tomography bin ni
       table[i] = (double*) malloc(sizeof(double)*N_a);
     }
   }
-
   if (recompute_zphot_shear(N) || recompute_cosmo3D(C)) 
   {
     { // init static variables
@@ -2460,7 +2459,6 @@ double g_tomo(double ainput, int ni) // for tomography bin ni
         }
         #pragma GCC diagnostic pop
       } 
-
       if (tomo.shear_Nbin > 0) 
       { 
         const int j = 0;      
@@ -2865,7 +2863,6 @@ double int_for_ggl_efficiency(double z, void* params)
   }
 
   const double a = 1. / (1. + z);
-
   return pf_photoz(z, ni)*g_tomo(a, nj) * (1.0 + z)*f_K(chi(a));
 }
 
