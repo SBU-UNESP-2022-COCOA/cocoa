@@ -123,9 +123,13 @@ class MultiFluidDE(DarkEnergyModel):
         ("w1", c_double, "Second binned w"),
         ("w2", c_double, "Third binned w"),
         ("w3", c_double, "Fourth binned w"),
+        ("w4", c_double, "Fourth binned w"),
+        ("w5", c_double, "Fourth binned w"),
         ("z1", c_double, "Bin limit"),
         ("z2", c_double, "Bin limit"),
         ("z3", c_double, "Bin limit"),
+        ("z4", c_double, "Bin limit"),
+        ("z5", c_double, "Bin limit"),
         ("zc", c_double, "EDE critical redshift."),
         ("fde_zc", c_double, "EDE energy contribution at critical redshift."),
         ("theta_i", c_double, "Initial field value divided by the potential frequency."),
@@ -133,14 +137,16 @@ class MultiFluidDE(DarkEnergyModel):
         ("n", c_double, "Power law of the axion/monomial potential."),
         ("grhonode_zc", c_double, "Energy density of everything except DE at zc."),
         ("freq", c_double, "Oscillation frequency of the axion field."),
-        ("fac1", c_double, "Power law of the axion/monomial potential."),
-        ("fac2", c_double, "Energy density of everything except DE at zc."),
-        ("fac3", c_double, "Oscillation frequency of the axion field.")
+        ("fac1", c_double, "Internal factor for binW."),
+        ("fac2", c_double, "Internal factor for binW"),
+        ("fac3", c_double, "Internal factor for binW."),
+        ("fac4", c_double, "Internal factor for binW"),
+        ("fac5", c_double, "Internal factor for binW")
     ]
 
     def set_params(self, num_of_components, models, w0 = -1, wa = 0,
                    zc = 3000, fde_zc = 0, wn = 1, theta_i = 1,
-                   w1 = -1, w2 = -1, w3 = -1, z1 = 0.7, z2 = 1.4, z3 = 2.1):
+                   w1 = -1, w2 = -1, w3 = -1, w4 = -1, w5 = -1, z1 = 0.7, z2 = 1.4, z3 = 2.1, z4 = 2.8, z5 = 3.5):
         """
          Set dark energy fluid parameters.
         """
@@ -158,9 +164,13 @@ class MultiFluidDE(DarkEnergyModel):
         self.w1 = w1
         self.w2 = w2
         self.w3 = w3
+        self.w4 = w4
+        self.w5 = w5
         self.z1 = z1
         self.z2 = z2
         self.z3 = z3
+        self.z4 = z4
+        self.z5 = z5
         self.zc = zc
         self.fde_zc = fde_zc
         self.theta_i = theta_i

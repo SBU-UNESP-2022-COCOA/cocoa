@@ -132,7 +132,7 @@ if [ -z "${IGNORE_CPP_BOOST_INSTALLATION}" ]; then
       return 1
     fi
 
-    ./b2 --with=regex install > /dev/null 2> /dev/null
+    ./b2 --with=regex install --without-python --without-thread --without-timer --without-mpi --without-atomic > /dev/null 2> /dev/null
     if [ $? -eq 0 ] 
     then
       echo "B2 BOOST OK"

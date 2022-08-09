@@ -64,6 +64,10 @@ external_modules/code/des_4x2ptN
 external_modules/code/kids
 external_modules/code/cocoa_*
 
+external_modules/code/PolyChordLite/build/lib.linux-x86_64-cpython-37/
+external_modules/code/PolyChordLite/dist/
+external_modules/code/planck/code/spt_clik/svnversion
+
 cobaya/cobaya/likelihoods/XXX
 cobaya/cobaya/likelihoods/des_y1
 cobaya/cobaya/likelihoods/desy1xplanck
