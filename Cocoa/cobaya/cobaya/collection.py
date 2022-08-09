@@ -139,6 +139,7 @@ class SampleCollection(BaseCollection):
                                               loaded_chi2_names, self.chi2_names)
                         unexpected = loaded_chi2_names.difference(
                             self.chi2_names).difference(self.derived_params)
+                        
                         if unexpected:
                             raise LoggedError(self.log,
                                               "Input samples have chi2 values "
