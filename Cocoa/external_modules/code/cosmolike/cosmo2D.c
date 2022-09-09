@@ -3068,33 +3068,8 @@ double C_gs_tomo_limber(double l, int ni, int nj)
           const int ZLNZ = ZL(k);
           const int ZSNZ = ZS(k);
           const double lnl = lnlmin + i*dlnl;
-          table[k][i] = C_gs_tomo_limber_nointerp(exp(lnl), ZLNZ, ZSNZ, use_linear_ps_limber, 0);
-        }
-      }
-      #pragma omp parallel for
-      for (int k=0; k<NSIZE; k++)
-      {
-        const int ZLNZ = ZL(k);
-        const int ZSNZ = ZS(k);
-        sig[k] = 1.;
-        osc[k] = 0;
-        if (C_gs_tomo_limber_nointerp(500., ZLNZ, ZSNZ, use_linear_ps_limber, 0) < 0)
-        {
-          sig[k] = -1.;
-        }
-        for (int i=0; i<nell; i++)
-        {
-          if (table[k][i] * sig[k] < 0.)
-          {
-            osc[k] = 1;
-          }
-        }
-        if (osc[k] == 0)
-        {
-          for (int i=0; i<nell; i++)
-          {
-            table[k][i] = log(sig[k] * table[k][i]);
-          }
+          const double ll = exp(lnl);
+          table[k][i] = C_gs_tomo_limber_nointerp(ll, ZLNZ, ZSNZ, use_linear_ps_limber, 0);
         }
       }
     }
@@ -3109,7 +3084,33 @@ double C_gs_tomo_limber(double l, int ni, int nj)
           const int ZSNZ = ZS(k);
           const double lnl = lnlmin + i*dlnl;
           const double ll = exp(lnl);
-          table[k][i] = log(C_gs_tomo_limber_nointerp(ll, ZLNZ, ZSNZ, use_linear_ps_limber, 0));
+          table[k][i] = C_gs_tomo_limber_nointerp(ll, ZLNZ, ZSNZ, use_linear_ps_limber, 0);
+        }
+      }
+    }
+    #pragma omp parallel for
+    for (int k=0; k<NSIZE; k++)
+    {
+      const int ZLNZ = ZL(k);
+      const int ZSNZ = ZS(k);
+      sig[k] = 1.;
+      osc[k] = 0;
+      if (C_gs_tomo_limber_nointerp(500., ZLNZ, ZSNZ, use_linear_ps_limber, 0) < 0)
+      {
+        sig[k] = -1.;
+      }
+      for (int i=0; i<nell; i++)
+      {
+        if (table[k][i] * sig[k] < 0.)
+        {
+          osc[k] = 1;
+        }
+      }
+      if (osc[k] == 0)
+      {
+        for (int i=0; i<nell; i++)
+        {
+          table[k][i] = log(sig[k] * table[k][i]);
         }
       }
     }
@@ -3134,40 +3135,21 @@ double C_gs_tomo_limber(double l, int ni, int nj)
   {
     log_warn("l = %e > l_max = %e. Extrapolation adopted", l, exp(lnlmax));
   }
-
-  if (like.IA == 5 || like.IA == 6) // TATT MODELING
-  {     
-    double f1 = 0.;
-    if (test_zoverlap(ni, nj) && osc[q] == 0)
-    {
-      f1 = sig[q] * exp(interpol(table[q], nell, lnlmin, lnlmax, dlnl, lnl, 0, 0));
-    }
-    else if (test_zoverlap(ni, nj) && osc[q] == 1)
-    {
-      f1 = interpol(table[q], nell, lnlmin, lnlmax, dlnl, lnl, 0, 0);
-    }
-    if (isnan(f1))
-    {
-      f1 = 0;
-    }
-    return f1;
-  }
-  else
+  
+  double f1 = 0.;
+  if (test_zoverlap(ni, nj) && osc[q] == 0)
   {
-    if(test_zoverlap(ni, nj))
-    {
-      const double f1 = exp(interpol_fitslope(table[q], nell, lnlmin, lnlmax, dlnl, lnl, 1));
-      if (isnan(f1))
-      {
-       return 0.0;
-      }
-      return f1;
-    }
-    else
-    {
-      return 0.0;
-    }
+    f1 = sig[q] * exp(interpol(table[q], nell, lnlmin, lnlmax, dlnl, lnl, 0, 0));
   }
+  else if (test_zoverlap(ni, nj) && osc[q] == 1)
+  {
+    f1 = interpol(table[q], nell, lnlmin, lnlmax, dlnl, lnl, 0, 0);
+  }
+  if (isnan(f1))
+  {
+    f1 = 0;
+  }
+  return f1;
 }
 
 // ---------------------------------------------------------------------------

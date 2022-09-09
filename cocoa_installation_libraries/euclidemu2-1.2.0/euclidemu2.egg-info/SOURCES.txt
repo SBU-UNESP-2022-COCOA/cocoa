@@ -1,7 +1,6 @@
 LICENSE
 MANIFEST.in
 README.md
-setup.cfg
 setup.py
 euclidemu2.egg-info/PKG-INFO
 euclidemu2.egg-info/SOURCES.txt
