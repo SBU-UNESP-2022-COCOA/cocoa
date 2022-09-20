@@ -4001,9 +4001,9 @@ double C_kk_limber(double l)
     update_cosmopara(&C);
   }
   const double lnl = log(l);
-  if (lnl < lnlmin)
+  if (lnl < log(2.0)) // lowest L for Ckk is 2;
   {
-    log_warn("l = %e < l_min = %e. Extrapolation adopted", l, exp(lnlmin));
+    log_warn("l = %e < l_min = %e. Extrapolation adopted", l, 2.0); // lowest L for Ckk is 2;
   }
   if (lnl > lnlmax)
   {
