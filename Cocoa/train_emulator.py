@@ -18,11 +18,17 @@ rank = comm.Get_rank()
 configfile = sys.argv[1]
 config = Config(configfile)
 
+
+#KZ:  debugging
 # print("testing......\n")
 # print(config.n_train_iter)
 # print(config.config_args_lkl)
 # print(config.debug)
 # print(config.likelihood)
+# try:
+#     os.makedirs(config.savedir)
+# except FileExistsError:
+#     pass
 # quit()
     
 # ============= LHS samples =================
@@ -117,18 +123,23 @@ for n in range(config.n_train_iter):
         train_data_vectors = train_data_vectors[select_chi_sq]
         train_samples      = train_samples[select_chi_sq]
     # ========================================================
+        #KZ: create the directory if not present
+        try:
+            os.makedirs(config.savedir)
+        except FileExistsError:
+            pass
         if(config.save_train_data):
             np.save(config.savedir + '/train_data_vectors_%d.npy'%(n), current_iter_data_vectors)
             np.save(config.savedir + '/train_samples_%d.npy'%(n), current_iter_samples)
         print("Training emulator...")
         if(config.emu_type=='nn'):
-            emu = NNEmulator(config.n_dim, config.output_dims, config.dv_fid, config.dv_std)
+            emu = nn_emulator(config.n_dim, config.output_dims, config.dv_fid, config.dv_std)
             emu.train(torch.Tensor(train_samples), torch.Tensor(train_data_vectors),\
                       batch_size=config.batch_size, n_epochs=config.n_epochs)
             if(config.save_intermediate_model):
                 emu.save(config.savedir + '/model_%d'%(n))
         elif(config.emu_type=='gp'):
-            emu = GPEmulator(config.n_dim, config.output_dims, config.dv_fid, config.dv_std)
+            emu = gp_emulator(config.n_dim, config.output_dims, config.dv_fid, config.dv_std)
             emu.train(train_samples, train_data_vectors)
     # ============= Sample from the posterior ======================
         print("Sampling from tempered posterior...")
