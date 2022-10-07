@@ -155,10 +155,11 @@ for n in range(config.n_train_iter):
         sampler.run_mcmc(pos0, config.n_mcmc, progress=True)
         samples = sampler.chain[:,config.n_burn_in::config.n_thin].reshape((-1, emu_sampler.n_sample_dims))
         
-        select_indices = np.random.choice(np.arange(len(samples)), replace=False, size=config.n_resample)
+        #select_indices = np.random.choice(np.arange(len(samples)), replace=False, size=config.n_resample)
+        select_indices = np.random.choice(np.arange(len(samples)), replace=False, size=0) #KZ: drop the alpha factor requires NO resample
         #DEBUG
-        print(config.n_fast_pars)
-        print(type(samples))
+        #print(config.n_fast_pars)
+        #print(type(samples))
 
 
         next_training_samples = samples[select_indices,:-(config.n_fast_pars)]
@@ -167,5 +168,6 @@ for n in range(config.n_train_iter):
     next_training_samples = comm.bcast(next_training_samples, root=0)
 
 if(rank==0):
-    emu.save(config.savedir + '/model_%d'%(n))    
+    emu.save(config.savedir + '/model_%d'%(n))
+    print("DONE!!")    
 MPI.Finalize
