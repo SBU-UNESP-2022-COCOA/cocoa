@@ -7,7 +7,9 @@ sys.path.insert(0, os.path.abspath(".."))
 
 from cocoa_emu import Config, get_lhs_params_list, get_params_list, CocoaModel
 #from cocoa_emu.emulator import NNEmulator, GPEmulator  #KZ: not working, no idea why
-from cocoa_emu.emulator import nn_emulator, gp_emulator
+from cocoa_emu import NNEmulator, GPEmulator  #KZ: not working, no idea why
+
+
 from cocoa_emu.sampling import EmuSampler
 import emcee
 
@@ -133,17 +135,18 @@ for n in range(config.n_train_iter):
             np.save(config.savedir + '/train_samples_%d.npy'%(n), current_iter_samples)
         print("Training emulator...")
         if(config.emu_type=='nn'):
-            emu = nn_emulator(config.n_dim, config.output_dims, config.dv_fid, config.dv_std)
+            emu = NNEmulator(config.n_dim, config.output_dims, config.dv_fid, config.dv_std)
             emu.train(torch.Tensor(train_samples), torch.Tensor(train_data_vectors),\
                       batch_size=config.batch_size, n_epochs=config.n_epochs)
             if(config.save_intermediate_model):
                 emu.save(config.savedir + '/model_%d'%(n))
         elif(config.emu_type=='gp'):
-            emu = gp_emulator(config.n_dim, config.output_dims, config.dv_fid, config.dv_std)
+            emu = GPEmulator(config.n_dim, config.output_dims, config.dv_fid, config.dv_std)
             emu.train(train_samples, train_data_vectors)
     # ============= Sample from the posterior ======================
         print("Sampling from tempered posterior...")
-        temper_val = min(0.8, config.temper0 + n * config.temper_increment)
+        #temper_val = min(0.8, config.temper0 + n * config.temper_increment)
+        temper_val = 1.0 #KZ: drop the alpha factor in 2203.06124v1
         emu_sampler = EmuSampler(emu, config)
         pos0 = emu_sampler.get_starting_pos()
         
@@ -153,6 +156,11 @@ for n in range(config.n_train_iter):
         samples = sampler.chain[:,config.n_burn_in::config.n_thin].reshape((-1, emu_sampler.n_sample_dims))
         
         select_indices = np.random.choice(np.arange(len(samples)), replace=False, size=config.n_resample)
+        #DEBUG
+        print(config.n_fast_pars)
+        print(type(samples))
+
+
         next_training_samples = samples[select_indices,:-(config.n_fast_pars)]
     else:
         next_training_samples = None
