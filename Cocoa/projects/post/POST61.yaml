@@ -1,0 +1,26 @@
+output: ./projects/post/chains/EXAMPLE_MCMC61_THIN
+
+post:
+  suffix: OMG
+#  skip: 0.5
+  remove:
+    likelihood:
+      des_y3.des_3x2pt:
+        path: ./external_modules/data/des_y3
+        data_file: DES_Y3.dataset
+        print_datavector: false
+        non_linear_emul: 1
+        kmax_boltzmann: 2.0
+  add:
+    params:
+      omegam_growth:
+        prior:
+          min: 0.24
+          max: 0.4
+    likelihood:
+      des_y3.des_3x2pt:
+        path: ./external_modules/data/des_y3
+        data_file: DES_Y3.dataset
+        print_datavector: false
+        non_linear_emul: 1
+        kmax_boltzmann: 2.0

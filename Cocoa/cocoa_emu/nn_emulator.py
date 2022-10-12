@@ -127,6 +127,9 @@ class NNEmulator:
 
                 y_pred = self.model(X_batch)
                 loss = torch.mean(torch.abs(y_batch - y_pred))
+                if loss > 100:
+                    print("Unreasonable Loss = ", loss)
+                    quite()
                 losses.append(loss)
                 self.optim.zero_grad()
                 loss.backward()

@@ -50,4 +50,6 @@ class CocoaModel:
             data_vector = likelihood.get_datavector(**input_params)
         else:
             data_vector = likelihood.compute_barion_datavector_masked_reduced_dim(baryon_scenario, **input_params)
+
+
         return np.array(data_vector)

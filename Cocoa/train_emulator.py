@@ -90,7 +90,7 @@ for n in range(config.n_train_iter):
         params_list = lhs_params
     else:
         params_list = get_params_list(next_training_samples, config.param_labels)
-    
+            
     current_iter_samples, current_iter_data_vectors = get_data_vectors(params_list, comm, rank)    
     
     if(n>1):
@@ -143,10 +143,11 @@ for n in range(config.n_train_iter):
         elif(config.emu_type=='gp'):
             emu = GPEmulator(config.n_dim, config.output_dims, config.dv_fid, config.dv_std)
             emu.train(train_samples, train_data_vectors)
+
+            emu.save(config.savedir + '/model_%d'%(n)) #KZ: save here for safety
     # ============= Sample from the posterior ======================
         print("Sampling from tempered posterior...")
-        #temper_val = min(0.8, config.temper0 + n * config.temper_increment)
-        temper_val = 1.0 #KZ: drop the alpha factor in 2203.06124v1
+        temper_val = min(0.8, config.temper0 + n * config.temper_increment)
         emu_sampler = EmuSampler(emu, config)
         pos0 = emu_sampler.get_starting_pos()
         
@@ -154,12 +155,18 @@ for n in range(config.n_train_iter):
                                         emu_sampler.ln_prob, args=(temper_val,))
         sampler.run_mcmc(pos0, config.n_mcmc, progress=True)
         samples = sampler.chain[:,config.n_burn_in::config.n_thin].reshape((-1, emu_sampler.n_sample_dims))
-        
-        #select_indices = np.random.choice(np.arange(len(samples)), replace=False, size=config.n_resample)
-        select_indices = np.random.choice(np.arange(len(samples)), replace=False, size=0) #KZ: drop the alpha factor requires NO resample
+
+
+        np.save(config.savedir + '/emu_chain_testting%d.npy'%(config.n_train_iter), samples)
+
         #DEBUG
         #print(config.n_fast_pars)
         #print(type(samples))
+        #print("test3", select_indices)
+        print("test4", samples)
+        
+        select_indices = np.random.choice(np.arange(len(samples)), replace=False, size=config.n_resample)
+        #select_indices = np.random.choice(np.arange(len(samples)), replace=False, size=0) #KZ: drop the alpha factor requires NO resample
 
 
         next_training_samples = samples[select_indices,:-(config.n_fast_pars)]

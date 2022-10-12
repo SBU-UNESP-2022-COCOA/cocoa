@@ -3,6 +3,7 @@ import numpy as np
 from cocoa_emu import Config, CocoaModel, NNEmulator, GPEmulator
 from cocoa_emu.sampling import EmuSampler
 import emcee
+import os
 
 from multiprocessing import Pool
 
@@ -17,6 +18,11 @@ try:
 except:
     emu_iter = config.n_train_iter - 1
 
+try:
+    os.makedirs(config.savedir)
+except FileExistsError:
+    pass
+
 cocoa_model = CocoaModel(configfile, config.likelihood)
 emu = NNEmulator(config.n_dim, config.output_dims, config.dv_fid, config.dv_std)
 emu.load(config.savedir + '/model_%d'%(emu_iter))
@@ -24,14 +30,15 @@ emu.load(config.savedir + '/model_%d'%(emu_iter))
 emu_sampler = EmuSampler(emu, config)
 pos0 = emu_sampler.get_starting_pos()
 
-import os
 os.environ["OMP_NUM_THREADS"] = "1"
 
 with Pool() as pool:
     sampler = emcee.EnsembleSampler(config.n_emcee_walkers, emu_sampler.n_sample_dims, 
-                                        ln_prob, args=(1.,), pool=pool)
+                                        ln_prob, args=(1.,), pool=pool) # makes temp=1?
     sampler.run_mcmc(pos0, config.n_mcmc, progress=True)
     
 samples = sampler.chain[:,config.n_burn_in::config.n_thin].reshape((-1, emu_sampler.n_sample_dims))    
 
 np.save(config.savedir + '/emu_chain_%d.npy'%(emu_iter), samples)
+np.save(config.savedir + '/emu_chain_testingggg_%d.npy'%(emu_iter), samples)
+print("DONE!!!!   ")

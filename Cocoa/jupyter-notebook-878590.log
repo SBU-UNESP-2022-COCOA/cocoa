@@ -1,0 +1,88 @@
+
+Command to create ssh tunnel:
+ssh -N -f -L 9002:cn010:9002 kuzhong@login.seawulf.stonybrook.edu
+
+Use a Browser on your local machine to go to:
+localhost:9002
+
+CommandNotFoundError: Your shell has not been properly configured to use 'conda activate'.
+To initialize your shell, run
+
+    $ conda init <SHELL_NAME>
+
+Currently supported shells are:
+  - bash
+  - fish
+  - tcsh
+  - xonsh
+  - zsh
+  - powershell
+
+See 'conda init --help' for more information and options.
+
+IMPORTANT: You may need to close and restart your shell after running 'conda init'.
+
+
+stop_cocoa: line 6: deactivate: command not found
+Warning: directory /gpfs/home/kuzhong/work/cocoa_gg_split/Cocoa/projects/post/scripts DOES NOT exists.
+Warning: directory /gpfs/home/kuzhong/work/cocoa_gg_split/Cocoa/projects/LSST-Year-1-tutorial/scripts DOES NOT exists.
+Warning: directory /gpfs/home/kuzhong/work/cocoa_gg_split/Cocoa/projects/post/scripts DOES NOT exists.
+Warning: directory /gpfs/home/kuzhong/work/cocoa_gg_split/Cocoa/projects/LSST-Year-1-tutorial/scripts DOES NOT exists.
+Warning: directory /gpfs/home/kuzhong/work/cocoa_gg_split/Cocoa/projects/post/interface DOES NOT exists.
+Warning: directory /gpfs/home/kuzhong/work/cocoa_gg_split/Cocoa/projects/post/likelihood DOES NOT exists.
+Warning: directory /gpfs/home/kuzhong/work/cocoa_gg_split/Cocoa/projects/post/data DOES NOT exists.
+Warning: directory /gpfs/home/kuzhong/work/cocoa_gg_split/Cocoa/projects/LSST-Year-1-tutorial/interface DOES NOT exists.
+Warning: directory /gpfs/home/kuzhong/work/cocoa_gg_split/Cocoa/projects/LSST-Year-1-tutorial/likelihood DOES NOT exists.
+[I 12:22:38.103 NotebookApp] Serving notebooks from local directory: /gpfs/projects/MirandaGroup/kunhao/cocoa_gg_split/Cocoa
+[I 12:22:38.107 NotebookApp] Jupyter Notebook 6.4.12 is running at:
+[I 12:22:38.107 NotebookApp] http://cn010:9002/?token=9e49183e6700df22d6f0c81872f56bcebc1805914c88010f
+[I 12:22:38.107 NotebookApp]  or http://127.0.0.1:9002/?token=9e49183e6700df22d6f0c81872f56bcebc1805914c88010f
+[I 12:22:38.107 NotebookApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
+[C 12:22:38.119 NotebookApp] 
+    
+    To access the notebook, open this file in a browser:
+        file:///gpfs/home/kuzhong/.local/share/jupyter/runtime/nbserver-9015-open.html
+    Or copy and paste one of these URLs:
+        http://cn010:9002/?token=9e49183e6700df22d6f0c81872f56bcebc1805914c88010f
+     or http://127.0.0.1:9002/?token=9e49183e6700df22d6f0c81872f56bcebc1805914c88010f
+[I 12:23:17.285 NotebookApp] 302 GET / (10.10.1.250) 1.040000ms
+[I 12:23:17.331 NotebookApp] 302 GET /tree? (10.10.1.250) 1.280000ms
+[I 12:23:33.259 NotebookApp] 302 POST /login?next=%2Ftree%3F (10.10.1.250) 2.130000ms
+[W 12:23:48.403 NotebookApp] Notebook projects/LSST-Year-1-tutorial/LSST-Y1 3x2pt sampling.ipynb is not trusted
+[W 12:23:48.497 NotebookApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20221010122233 (10.10.1.250) 52.650000ms referer=http://localhost:9002/notebooks/projects/LSST-Year-1-tutorial/LSST-Y1%203x2pt%20sampling.ipynb
+[I 12:23:49.331 NotebookApp] Kernel started: 6b4255a2-a2de-481f-8210-056b8a2c071b, name: python3
+[I 12:25:49.312 NotebookApp] Saving file at /projects/LSST-Year-1-tutorial/LSST-Y1 3x2pt sampling.ipynb
+[I 13:17:40.780 NotebookApp] Starting buffering for 6b4255a2-a2de-481f-8210-056b8a2c071b:27cea471db714bca8ae4ebe13c722d4b
+[I 13:17:42.878 NotebookApp] Restoring connection for 6b4255a2-a2de-481f-8210-056b8a2c071b:27cea471db714bca8ae4ebe13c722d4b
+[W 13:19:12.883 NotebookApp] WebSocket ping timeout after 90004 ms.
+[I 13:19:17.886 NotebookApp] Starting buffering for 6b4255a2-a2de-481f-8210-056b8a2c071b:27cea471db714bca8ae4ebe13c722d4b
+[I 13:32:44.040 NotebookApp] Restoring connection for 6b4255a2-a2de-481f-8210-056b8a2c071b:27cea471db714bca8ae4ebe13c722d4b
+[I 13:36:17.626 NotebookApp] Copying projects/LSST-Year-1-tutorial/LSST-Y1 3x2pt sampling.ipynb to /projects/LSST-Year-1-tutorial
+[W 13:36:58.708 NotebookApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20221010122233 (10.10.1.250) 5.240000ms referer=http://localhost:9002/notebooks/projects/LSST-Year-1-tutorial/LSST-Y1%203x2pt%20sampling-Copy1.ipynb
+[I 13:36:59.377 NotebookApp] Kernel started: 0d10d9d6-54e9-4b36-8e33-fe88d178fc11, name: python3
+[I 13:38:59.512 NotebookApp] Saving file at /projects/LSST-Year-1-tutorial/LSST-Y1 3x2pt---test.ipynb
+[I 13:45:00.257 NotebookApp] Saving file at /projects/LSST-Year-1-tutorial/LSST-Y1 3x2pt---test.ipynb
+[I 13:46:34.309 NotebookApp] Saving file at /projects/LSST-Year-1-tutorial/LSST-Y1 3x2pt---test.ipynb
+[I 14:01:42.102 NotebookApp] Copying projects/LSST-Year-1-tutorial/configs/cocoa_configs/MCMC_W_BARYONS.yaml to /projects/LSST-Year-1-tutorial/configs/cocoa_configs
+[I 14:02:24.931 NotebookApp] Saving file at /projects/LSST-Year-1-tutorial/configs/cocoa_configs/test1.yaml
+[I 15:31:50.520 NotebookApp] Starting buffering for 6b4255a2-a2de-481f-8210-056b8a2c071b:27cea471db714bca8ae4ebe13c722d4b
+[I 15:31:50.523 NotebookApp] Starting buffering for 0d10d9d6-54e9-4b36-8e33-fe88d178fc11:73db9362c6fb4981990496b386b83dac
+[I 15:31:52.550 NotebookApp] Restoring connection for 6b4255a2-a2de-481f-8210-056b8a2c071b:27cea471db714bca8ae4ebe13c722d4b
+[I 15:31:52.614 NotebookApp] Restoring connection for 0d10d9d6-54e9-4b36-8e33-fe88d178fc11:73db9362c6fb4981990496b386b83dac
+[W 15:33:22.552 NotebookApp] WebSocket ping timeout after 90001 ms.
+[W 15:33:22.614 NotebookApp] WebSocket ping timeout after 90000 ms.
+[I 15:33:27.555 NotebookApp] Starting buffering for 6b4255a2-a2de-481f-8210-056b8a2c071b:27cea471db714bca8ae4ebe13c722d4b
+[I 15:33:27.616 NotebookApp] Starting buffering for 0d10d9d6-54e9-4b36-8e33-fe88d178fc11:73db9362c6fb4981990496b386b83dac
+[I 15:38:38.698 NotebookApp] Restoring connection for 0d10d9d6-54e9-4b36-8e33-fe88d178fc11:73db9362c6fb4981990496b386b83dac
+[I 15:38:38.758 NotebookApp] Restoring connection for 6b4255a2-a2de-481f-8210-056b8a2c071b:27cea471db714bca8ae4ebe13c722d4b
+[I 16:04:22.449 NotebookApp] Starting buffering for 0d10d9d6-54e9-4b36-8e33-fe88d178fc11:73db9362c6fb4981990496b386b83dac
+[W 16:04:23.101 NotebookApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20221010122233 (10.10.1.250) 4.600000ms referer=http://localhost:9002/notebooks/projects/LSST-Year-1-tutorial/LSST-Y1%203x2pt---test.ipynb
+[I 16:50:29.883 NotebookApp] Starting buffering for 6b4255a2-a2de-481f-8210-056b8a2c071b:27cea471db714bca8ae4ebe13c722d4b
+[I 16:50:29.885 NotebookApp] Starting buffering for 0d10d9d6-54e9-4b36-8e33-fe88d178fc11:b092804c394746929e161854cab13f4f
+[I 16:50:31.596 NotebookApp] Restoring connection for 0d10d9d6-54e9-4b36-8e33-fe88d178fc11:b092804c394746929e161854cab13f4f
+[I 16:50:31.656 NotebookApp] Restoring connection for 6b4255a2-a2de-481f-8210-056b8a2c071b:27cea471db714bca8ae4ebe13c722d4b
+[W 16:52:01.597 NotebookApp] WebSocket ping timeout after 90001 ms.
+[W 16:52:01.658 NotebookApp] WebSocket ping timeout after 90002 ms.
+[I 16:52:06.600 NotebookApp] Starting buffering for 0d10d9d6-54e9-4b36-8e33-fe88d178fc11:b092804c394746929e161854cab13f4f
+[I 16:52:06.660 NotebookApp] Starting buffering for 6b4255a2-a2de-481f-8210-056b8a2c071b:27cea471db714bca8ae4ebe13c722d4b
+slurmstepd: error: *** JOB 878590 ON cn010 CANCELLED AT 2022-10-10T22:22:28 DUE TO TIME LIMIT ***

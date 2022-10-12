@@ -38,3 +38,4 @@
 [2022-10-07 12:31:33] [[32minfo[0m][0m [90m/gpfs/home/kuzhong/work/cocoa_gg_split/Cocoa/external_modules/code/cosmolike/redshift_spline.c:1428:[0m tomo.clustering_zmin[2] = 0.379,tomo.clustering_zmax[2] = 0.986
 [2022-10-07 12:31:33] [[32minfo[0m][0m [90m/gpfs/home/kuzhong/work/cocoa_gg_split/Cocoa/external_modules/code/cosmolike/redshift_spline.c:1428:[0m tomo.clustering_zmin[3] = 0.519,tomo.clustering_zmax[3] = 1.208
 [2022-10-07 12:31:33] [[32minfo[0m][0m [90m/gpfs/home/kuzhong/work/cocoa_gg_split/Cocoa/external_modules/code/cosmolike/redshift_spline.c:1428:[0m tomo.clustering_zmin[4] = 0.718,tomo.clustering_zmax[4] = 1.488
+slurmstepd: error: *** JOB 877051 ON cn067 CANCELLED AT 2022-10-09T12:31:30 DUE TO TIME LIMIT ***

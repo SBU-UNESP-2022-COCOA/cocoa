@@ -11,10 +11,17 @@ def hard_prior(theta, params_prior):
         return 0.
     
 def gaussian_prior(theta, params_prior):
-    mu  = params_prior[:,0]
-    std = params_prior[:,1]
-    y = (theta - mu) / std
-    return -0.5 * np.sum(y * y)
+    #KZ: fix bug when no gaussian_prior
+    if theta.size==0 and params_prior.size==0:
+        return 0.
+        print(theta)
+        print(params_prior)
+        print("testing")
+    else:
+        mu  = params_prior[:,0]
+        std = params_prior[:,1]
+        y = (theta - mu) / std
+        return -0.5 * np.sum(y * y)
 
 def split_with_comma(configline):
     configline_split = configline.split(',')
@@ -191,7 +198,11 @@ class EmuSampler:
     def ln_lkl(self, theta):
         model_datavector = self.get_data_vector_emu(theta)
         delta_dv = (model_datavector - self.dv_obs)[self.mask]
-        return -0.5 * delta_dv @ self.masked_inv_cov @ delta_dv        
+        ln_lkl = -0.5 * delta_dv @ self.masked_inv_cov @ delta_dv  
+        print("testing", ln_lkl)
+        return ln_lkl      
 
     def ln_prob(self, theta, temper=1.):
-        return self.ln_prior(theta) + temper * self.ln_lkl(theta)
+        ln_prob = self.ln_prior(theta) + temper * self.ln_lkl(theta)
+        print("testing", ln_prob)
+        return ln_prob
