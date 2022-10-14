@@ -3,6 +3,7 @@ share/
 include/
 .local/
 *.out
+*.out.err
 core.*
 *.a
 *.o
