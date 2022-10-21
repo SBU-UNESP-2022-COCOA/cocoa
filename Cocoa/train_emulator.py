@@ -1,0 +1,108 @@
+import sys,os
+from mpi4py import MPI
+import numpy as np
+import torch
+
+sys.path.insert(0, os.path.abspath(".."))
+
+from cocoa_emu import Config, get_lhs_params_list, get_params_list, CocoaModel
+#from cocoa_emu.emulator import NNEmulator, GPEmulator  #KZ: not working, no idea why
+from cocoa_emu import GPEmulator, NNEmulator  #KZ: not working, no idea why
+
+
+from cocoa_emu.sampling import EmuSampler
+import emcee
+
+comm = MPI.COMM_WORLD
+size = comm.Get_size()
+rank = comm.Get_rank()
+
+configfile = sys.argv[1]
+config = Config(configfile)
+
+# this script do the same thing for as train_emulator.py, but instead calculate the data_vactors for training, a set of
+# calculated data_vectors(using cocoa) is being provided.  
+train_samples_file1      = np.load(sys.argv[2]+'_samples.npy')
+train_data_vectors_file1 = np.load(sys.argv[2]+'_data_vectors.npy')
+
+#train_samples_file2      = np.load(sys.argv[3]+'_samples.npy')
+#train_data_vectors_file2 = np.load(sys.argv[3]+'_data_vectors.npy')
+
+
+# train_samples = np.vstack((train_samples_file1, train_samples_file2))
+# train_data_vectors = np.vstack((train_data_vectors_file1, train_data_vectors_file2))
+
+train_samples = train_samples_file1
+train_data_vectors = train_data_vectors_file1
+
+print("length of samples to train: ", len(train_samples))
+
+if config.probe=='cosmic_shear':
+    print("training for cosmic shear only")
+    output_dims = 780
+    train_data_vectors = train_data_vectors[:,:output_dims]
+    cov_inv = np.linalg.inv(config.cov)[0:output_dims, 0:output_dims] #NO mask here for cov_inv enters training
+    mask_cs = config.mask[0:output_dims]
+    
+    dv_fid =config.dv_fid[0:output_dims]
+    dv_std = config.dv_std[0:output_dims]
+elif config.probe=='3x2pt':
+    print("trianing for 3x2pt")
+    train_data_vectors = train_data_vectors
+    cov_inv = np.linalg.inv(config.cov) #NO mask here for cov_inv enters training
+    output_dims = config.output_dims
+    dv_fid =config.dv_fid
+    dv_std = config.dv_std
+else:
+    print('probe not defnied')
+    quit()
+
+def get_chi_sq_cut(train_data_vectors):
+    chi_sq_list = []
+    for dv in train_data_vectors:
+        if config.probe=='cosmic_shear':
+            delta_dv = (dv - config.dv_obs[0:output_dims])[mask_cs] #technically this should be masked(on a fiducial scale cut), but the difference is small
+            chi_sq = delta_dv @ cov_inv[mask_cs][:,mask_cs] @ delta_dv
+        elif config.probe=='3x2pt':
+            delta_dv = (dv - config.dv_obs)[config.mask]
+            chi_sq = delta_dv @ config.masked_inv_cov @ delta_dv
+
+
+        chi_sq_list.append(chi_sq)
+    chi_sq_arr = np.array(chi_sq_list)
+    select_chi_sq = (chi_sq_arr < config.chi_sq_cut)
+    return select_chi_sq
+        # ===============================================
+select_chi_sq = get_chi_sq_cut(train_data_vectors)
+selected_obj = np.sum(select_chi_sq)
+total_obj    = len(select_chi_sq)
+        # ===============================================
+        
+train_data_vectors = train_data_vectors[select_chi_sq]
+train_samples      = train_samples[select_chi_sq]
+
+##Normalize the data vectors for training based on the maximum##
+dv_max = np.abs(train_data_vectors).max(axis=0)
+train_data_vectors = train_data_vectors / dv_max
+
+np.savetxt('input_norm.txt',train_data_vectors, fmt='%s' )
+
+
+print("samples after chi2 cut: ", len(train_samples))
+
+
+print("Training emulator...")
+if(config.emu_type=='nn'):
+    emu = NNEmulator(config.n_dim, output_dims, dv_fid, dv_std, cov_inv, dv_max)
+    emu.train(torch.Tensor(train_samples), torch.Tensor(train_data_vectors),\
+                      batch_size=config.batch_size, n_epochs=config.n_epochs)
+    print("out put to model_0")
+    emu.save(config.savedir + '/model_0')
+elif(config.emu_type=='gp'):
+    emu = GPEmulator(config.n_dim, config.output_dims, config.dv_fid, config.dv_std)
+    emu.train(train_samples, train_data_vectors)
+
+    emu.save(config.savedir + '/model_GP') #KZ: save here for safety
+
+
+print("DONE!!")    

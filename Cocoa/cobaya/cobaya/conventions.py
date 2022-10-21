@@ -22,6 +22,13 @@ resume_default = False
 
 kinds = ("sampler", "theory", "likelihood")
 
+#KZ start
+_timing = "timing"
+_params = "params"
+_prior = "prior"
+_packages_path = "packages_path"
+#KZ end
+
 # Reserved attributes for component classes with defaults.
 # These are ignored by HasDefaults.get_class_options()
 reserved_attributes = {"input_params", "output_params", "install_options",
