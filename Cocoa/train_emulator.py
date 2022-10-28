@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.abspath(".."))
 
 from cocoa_emu import Config, get_lhs_params_list, get_params_list, CocoaModel
 #from cocoa_emu.emulator import NNEmulator, GPEmulator  #KZ: not working, no idea why
-from cocoa_emu import NNEmulator, GPEmulator  #KZ: not working, no idea why
+from cocoa_emu import GPEmulator, NNEmulator  #KZ: not working, no idea why
 
 
 from cocoa_emu.sampling import EmuSampler
@@ -20,161 +20,107 @@ rank = comm.Get_rank()
 configfile = sys.argv[1]
 config = Config(configfile)
 
+# this script do the same thing for as train_emulator.py, but instead calculate the data_vactors for training, a set of
+# calculated data_vectors(using cocoa) is being provided.  
+train_samples_file1      = np.load(sys.argv[2]+'_samples.npy')
+train_data_vectors_file1 = np.load(sys.argv[2]+'_data_vectors.npy')
 
-#KZ:  debugging
-# print("testing......\n")
-# print(config.n_train_iter)
-# print(config.config_args_lkl)
-# print(config.debug)
-# print(config.likelihood)
-# try:
-#     os.makedirs(config.savedir)
-# except FileExistsError:
-#     pass
-# quit()
+train_samples = train_samples_file1
+train_data_vectors = train_data_vectors_file1
+
+print("length of samples from LHS: ", len(train_samples))
+
+if config.probe=='cosmic_shear':
+    print("training for cosmic shear only")
+    OUTPUT_DIM = 780
+    train_data_vectors = train_data_vectors[:,:OUTPUT_DIM]
+    cov_inv = np.linalg.inv(config.cov)[0:OUTPUT_DIM, 0:OUTPUT_DIM] #NO mask here for cov_inv enters training
+    mask_cs = config.mask[0:OUTPUT_DIM]
     
-# ============= LHS samples =================
-from pyDOE import lhs
+    dv_fid =config.dv_fid[0:OUTPUT_DIM]
+    dv_std = config.dv_std[0:OUTPUT_DIM]
+elif config.probe=='3x2pt':
+    print("trianing for 3x2pt")
+    train_data_vectors = train_data_vectors
+    cov_inv = np.linalg.inv(config.cov) #NO mask here for cov_inv enters training
+    OUTPUT_DIM = config.output_dim #config will do it automatically, check config.py
+    dv_fid =config.dv_fid
+    dv_std = config.dv_std
+else:
+    print('probe not defnied')
+    quit()
 
-def get_lhs_samples(N_dim, N_lhs, lhs_minmax):
-    unit_lhs_samples = lhs(N_dim, N_lhs)
-    lhs_params = get_lhs_params_list(unit_lhs_samples, lhs_minmax)
-    return lhs_params
+def get_chi_sq_cut(train_data_vectors, chi2_cut):
+    chi_sq_list = []
+    for dv in train_data_vectors:
+        if config.probe=='cosmic_shear':
+            delta_dv = (dv - config.dv_obs[0:OUTPUT_DIM])[mask_cs] #technically this should be masked(on a fiducial scale cut), but the difference is small
+            chi_sq = delta_dv @ cov_inv[mask_cs][:,mask_cs] @ delta_dv
+        elif config.probe=='3x2pt':
+            delta_dv = (dv - config.dv_obs)[config.mask]
+            chi_sq = delta_dv @ config.masked_inv_cov @ delta_dv
 
-# ================== Calculate data vectors ==========================
 
-
-
-cocoa_model = CocoaModel(configfile, config.likelihood)
-
-def get_local_data_vector_list(params_list, rank):
-    train_params_list      = []
-    train_data_vector_list = []
-    N_samples = len(params_list)
-    N_local   = N_samples // size    
-    for i in range(rank * N_local, (rank + 1) * N_local):
-        params_arr  = np.array(list(params_list[i].values()))
-        data_vector = cocoa_model.calculate_data_vector(params_list[i])
-        train_params_list.append(params_arr)
-        train_data_vector_list.append(data_vector)
-    return train_params_list, train_data_vector_list
-
-def get_data_vectors(params_list, comm, rank):
-    local_params_list, local_data_vector_list = get_local_data_vector_list(params_list, rank)
-    if rank!=0:
-        comm.send([local_params_list, local_data_vector_list], dest=0)
-        train_params       = None
-        train_data_vectors = None
-    else:
-        data_vector_list = local_data_vector_list
-        params_list      = local_params_list
-        for source in range(1,size):
-            new_params_list, new_data_vector_list = comm.recv(source=source)
-            data_vector_list = data_vector_list + new_data_vector_list
-            params_list      = params_list + new_params_list
-        train_params       = np.vstack(params_list)    
-        train_data_vectors = np.vstack(data_vector_list)        
-    return train_params, train_data_vectors
-
-for n in range(config.n_train_iter):
-    print("Iteration: %d"%(n))
-    if(n<=1):
-        train_samples_list = []
-        train_data_vectors_list = []
-    if(n==0):
-        if(rank==0):
-            lhs_params = get_lhs_samples(config.n_dim, config.n_lhs, config.lhs_minmax)
-        else:
-            lhs_params = None
-        lhs_params = comm.bcast(lhs_params, root=0)
-        params_list = lhs_params
-    else:
-        params_list = get_params_list(next_training_samples, config.param_labels)
-            
-    current_iter_samples, current_iter_data_vectors = get_data_vectors(params_list, comm, rank)    
-    
-    if(n>1):
-        train_samples_list.append(current_iter_samples)
-        train_data_vectors_list.append(current_iter_data_vectors)
-        if(n >= 3):
-            del train_samples_list[0]
-            del train_data_vectors_list[0]            
-        train_samples      = np.vstack(train_samples_list)
-        train_data_vectors = np.vstack(train_data_vectors_list)
-    else:
-        train_samples      = current_iter_samples
-        train_data_vectors = current_iter_data_vectors
-    # ================== Train emulator ==========================
-    if(rank==0):
-        # ================== Chi_sq cut ==========================
-        def get_chi_sq_cut(train_data_vectors):
-            chi_sq_list = []
-            for dv in train_data_vectors:
-                delta_dv = (dv - config.dv_obs)[config.mask]
-                chi_sq = delta_dv @ config.masked_inv_cov @ delta_dv
-                chi_sq_list.append(chi_sq)
-            chi_sq_arr = np.array(chi_sq_list)
-            select_chi_sq = (chi_sq_arr < config.chi_sq_cut)
-            return select_chi_sq
-        # ===============================================
-        select_chi_sq = get_chi_sq_cut(train_data_vectors)
-        selected_obj = np.sum(select_chi_sq)
-        total_obj    = len(select_chi_sq)
-        # ===============================================
+        chi_sq_list.append(chi_sq)
+    chi_sq_arr = np.array(chi_sq_list)
+    select_chi_sq = (chi_sq_arr < chi2_cut)
+    return select_chi_sq
+# ====================chi2 cut for train dvs===========================
+# select_chi_sq = get_chi_sq_cut(train_data_vectors, config.chi_sq_cut)
+select_chi_sq = get_chi_sq_cut(train_data_vectors, 1e6)
+selected_obj = np.sum(select_chi_sq)
+total_obj    = len(select_chi_sq)
         
-        train_data_vectors = train_data_vectors[select_chi_sq]
-        train_samples      = train_samples[select_chi_sq]
-    # ========================================================
-        #KZ: create the directory if not present
-        try:
-            os.makedirs(config.savedir)
-        except FileExistsError:
-            pass
-        if(config.save_train_data):
-            np.save(config.savedir + '/train_data_vectors_%d.npy'%(n), current_iter_data_vectors)
-            np.save(config.savedir + '/train_samples_%d.npy'%(n), current_iter_samples)
-        print("Training emulator...")
-        if(config.emu_type=='nn'):
-            emu = NNEmulator(config.n_dim, config.output_dims, config.dv_fid, config.dv_std)
-            emu.train(torch.Tensor(train_samples), torch.Tensor(train_data_vectors),\
+train_data_vectors = train_data_vectors[select_chi_sq]
+train_samples      = train_samples[select_chi_sq]
+
+print("training LHC samples after chi2 cut: ", len(train_samples))
+
+#adding points from chains here to avoid chi2 cut
+if len(sys.argv) > 3:
+    print("training with posterior samples")
+    train_samples_file2      = np.load(sys.argv[3]+'_samples.npy')
+    train_data_vectors_file2 = np.load(sys.argv[3]+'_data_vectors.npy')[:,:OUTPUT_DIM]
+    
+    train_samples = np.vstack((train_samples, train_samples_file2))
+    train_data_vectors = np.vstack((train_data_vectors, train_data_vectors_file2))
+    print("posterior samples contains: ", len(train_samples_file2))
+
+print("Total samples enter the training: ", len(train_samples))
+
+##Normalize the data vectors for training based on the maximum##
+dv_max = np.abs(train_data_vectors).max(axis=0)
+train_data_vectors = train_data_vectors / dv_max
+
+# np.savetxt('input_norm.txt',train_data_vectors, fmt='%s' )
+
+
+
+
+###============= Setting up validation set ============
+validation_samples = np.load('./projects/lsst_y1/emulator_output/emu_test/test_samples.npy')
+validation_data_vectors = np.load('./projects/lsst_y1/emulator_output/emu_test/test_data_vectors.npy')[:,:OUTPUT_DIM]
+#        ====================chi2 cut for test dvs===========================
+select_chi_sq = get_chi_sq_cut(validation_data_vectors, 7000)
+selected_obj = np.sum(select_chi_sq)
+total_obj    = len(select_chi_sq)
+        
+validation_data_vectors = validation_data_vectors[select_chi_sq]
+validation_samples      = validation_samples[select_chi_sq]
+
+print("validation samples after chi2 cut: ", len(validation_samples))
+
+
+print("Training emulator...")
+if(config.emu_type=='nn'):
+    emu = NNEmulator(config.n_dim, OUTPUT_DIM, dv_fid, dv_std, cov_inv, dv_max)
+    emu.train(torch.Tensor(train_samples), torch.Tensor(train_data_vectors), torch.Tensor(validation_samples), torch.Tensor(validation_data_vectors),\
                       batch_size=config.batch_size, n_epochs=config.n_epochs)
-            if(config.save_intermediate_model):
-                emu.save(config.savedir + '/model_%d'%(n))
-        elif(config.emu_type=='gp'):
-            emu = GPEmulator(config.n_dim, config.output_dims, config.dv_fid, config.dv_std)
-            emu.train(train_samples, train_data_vectors)
-
-            emu.save(config.savedir + '/model_%d'%(n)) #KZ: save here for safety
-    # ============= Sample from the posterior ======================
-        print("Sampling from tempered posterior...")
-        temper_val = min(0.8, config.temper0 + n * config.temper_increment)
-        emu_sampler = EmuSampler(emu, config)
-        pos0 = emu_sampler.get_starting_pos()
-        
-        sampler = emcee.EnsembleSampler(config.n_emcee_walkers, emu_sampler.n_sample_dims, 
-                                        emu_sampler.ln_prob, args=(temper_val,))
-        sampler.run_mcmc(pos0, config.n_mcmc, progress=True)
-        samples = sampler.chain[:,config.n_burn_in::config.n_thin].reshape((-1, emu_sampler.n_sample_dims))
+    print("out put to model")
+    emu.save(config.savedir + '/model')
+elif(config.emu_type=='gp'):
+    print("Gaussian Progression NOT implemented yet")
+    quit()
 
 
-        np.save(config.savedir + '/emu_chain_testting%d.npy'%(config.n_train_iter), samples)
-
-        #DEBUG
-        #print(config.n_fast_pars)
-        #print(type(samples))
-        #print("test3", select_indices)
-        print("test4", samples)
-        
-        select_indices = np.random.choice(np.arange(len(samples)), replace=False, size=config.n_resample)
-        #select_indices = np.random.choice(np.arange(len(samples)), replace=False, size=0) #KZ: drop the alpha factor requires NO resample
-
-
-        next_training_samples = samples[select_indices,:-(config.n_fast_pars)]
-    else:
-        next_training_samples = None
-    next_training_samples = comm.bcast(next_training_samples, root=0)
-
-if(rank==0):
-    emu.save(config.savedir + '/model_%d'%(n))
-    print("DONE!!")    
-MPI.Finalize
+print("DONE!!")    
