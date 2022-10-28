@@ -6,7 +6,7 @@ import torch
 sys.path.insert(0, os.path.abspath(".."))
 
 from cocoa_emu import Config, get_lhs_params_list, get_params_list, CocoaModel
-from cocoa_emu import NNEmulator, GPEmulator
+# from cocoa_emu import NNEmulator, GPEmulator
 
 
 from cocoa_emu.sampling import EmuSampler
@@ -127,7 +127,6 @@ for n in range(config.n_train_iter):
         np.save(config.savedir + '/train_samples_%d.npy'%(n), current_iter_samples)
     else:
         next_training_samples = None
-    next_training_samples = comm.bcast(next_training_samples, root=0)
 
 if(rank==0):
     print("data vectors for emu training calculated")    
