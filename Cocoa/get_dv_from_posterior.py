@@ -99,6 +99,8 @@ try:
     params_list = get_params_list(posterior_params, config.param_labels)
 except:
     print("something wrong with input, it should be a .npy file generated with 'get_samples_from_posterior.py', where you do burn-in and thinning ")
+    print("what we get is: ", np.shape(posterior_params))
+    quit()
 
             
 train_samples, train_data_vectors = get_data_vectors(params_list, comm, rank)    

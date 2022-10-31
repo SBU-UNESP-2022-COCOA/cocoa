@@ -111,6 +111,16 @@ validation_samples      = validation_samples[select_chi_sq]
 print("validation samples after chi2 cut: ", len(validation_samples))
 
 
+##### shuffeling #####
+def unison_shuffled_copies(a, b):
+    assert len(a) == len(b)
+    p = numpy.random.permutation(len(a))
+    return a[p], b[p]
+
+train_samples, train_data_vectors = unison_shuffled_copies(train_samples, train_data_vectors)
+validation_samples, validation_data_vectors = unison_shuffled_copies(validation_samples, validation_data_vectors)
+
+
 print("Training emulator...")
 if(config.emu_type=='nn'):
     emu = NNEmulator(config.n_dim, OUTPUT_DIM, dv_fid, dv_std, cov_inv, dv_max)
