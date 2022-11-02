@@ -53,6 +53,7 @@ def get_local_data_vector_list(params_list, rank):
 
 def get_data_vectors(params_list, comm, rank):
     local_params_list, local_data_vector_list = get_local_data_vector_list(params_list, rank)
+    comm.Barrier()
     if rank!=0:
         comm.send([local_params_list, local_data_vector_list], dest=0)
         train_params       = None

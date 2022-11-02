@@ -25,10 +25,11 @@ LSST_A1_1_max = +5
 LSST_A1_2_min = -5
 LSST_A1_2_max = +5
 
-root_chains = ('projects/lsst_y1/chains/EXAMPLE_MCMC2',
+root_chains = ('projects/lsst_y1/chains/EXAMPLE_MCMC1',
+               'projects/lsst_y1/chains/EXAMPLE_MCMC2',
     )
 
-num_points_thin = 40000
+num_points_thin = 80000
 
 analysissettings={'smooth_scale_1D':0.35,'smooth_scale_2D':0.35,'ignore_rows': u'0.5',
 'range_confidence' : u'0.005'}
@@ -87,7 +88,7 @@ samples_list = np.transpose([logA, ns, H0, omegab, omegam, LSST_DZ_S1, LSST_DZ_S
 print("shape of samples plist is: ", np.shape(samples_list))
 
 
-
+print(samples_list[0])
 
 np.save('projects/lsst_y1/emulator_output/post/samples_from_posterior.npy', samples_list)
 

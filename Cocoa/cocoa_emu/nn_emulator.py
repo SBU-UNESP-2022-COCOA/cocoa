@@ -125,7 +125,7 @@ class NNEmulator:
                 )
 
 
-        #device = "cuda" if torch.cuda.is_available() else "cpu" #KZ
+        device = "cuda" if torch.cuda.is_available() else "cpu" #KZ
         print(device)
         self.model.to(device)
         
