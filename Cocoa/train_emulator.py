@@ -1,21 +1,13 @@
 import sys,os
-from mpi4py import MPI
 import numpy as np
 import torch
 
 sys.path.insert(0, os.path.abspath(".."))
 
-from cocoa_emu import Config, get_lhs_params_list, get_params_list, CocoaModel
+from cocoa_emu import Config
 #from cocoa_emu.emulator import NNEmulator, GPEmulator  #KZ: not working, no idea why
-from cocoa_emu import GPEmulator, NNEmulator  #KZ: not working, no idea why
+from cocoa_emu import NNEmulator  #KZ: not working, no idea why
 
-
-from cocoa_emu.sampling import EmuSampler
-import emcee
-
-comm = MPI.COMM_WORLD
-size = comm.Get_size()
-rank = comm.Get_rank()
 
 configfile = sys.argv[1]
 config = Config(configfile)
@@ -67,12 +59,13 @@ def get_chi_sq_cut(train_data_vectors, chi2_cut):
     return select_chi_sq
 # ====================chi2 cut for train dvs===========================
 # select_chi_sq = get_chi_sq_cut(train_data_vectors, config.chi_sq_cut)
-select_chi_sq = get_chi_sq_cut(train_data_vectors, 1e6)
-selected_obj = np.sum(select_chi_sq)
-total_obj    = len(select_chi_sq)
+print("not applying chi2 cut to lhs")
+# select_chi_sq = get_chi_sq_cut(train_data_vectors, 1e6)
+# selected_obj = np.sum(select_chi_sq)
+# total_obj    = len(select_chi_sq)
         
-train_data_vectors = train_data_vectors[select_chi_sq]
-train_samples      = train_samples[select_chi_sq]
+# train_data_vectors = train_data_vectors[select_chi_sq]
+# train_samples      = train_samples[select_chi_sq]
 
 print("training LHC samples after chi2 cut: ", len(train_samples))
 
@@ -92,10 +85,6 @@ print("Total samples enter the training: ", len(train_samples))
 dv_max = np.abs(train_data_vectors).max(axis=0)
 train_data_vectors = train_data_vectors / dv_max
 
-# np.savetxt('input_norm.txt',train_data_vectors, fmt='%s' )
-
-
-
 
 ###============= Setting up validation set ============
 validation_samples = np.load('./projects/lsst_y1/emulator_output/emu_test/test_samples.npy')
@@ -114,7 +103,7 @@ print("validation samples after chi2 cut: ", len(validation_samples))
 ##### shuffeling #####
 def unison_shuffled_copies(a, b):
     assert len(a) == len(b)
-    p = numpy.random.permutation(len(a))
+    p = np.random.permutation(len(a))
     return a[p], b[p]
 
 train_samples, train_data_vectors = unison_shuffled_copies(train_samples, train_data_vectors)
@@ -122,15 +111,25 @@ validation_samples, validation_data_vectors = unison_shuffled_copies(validation_
 
 
 print("Training emulator...")
-if(config.emu_type=='nn'):
-    emu = NNEmulator(config.n_dim, OUTPUT_DIM, dv_fid, dv_std, cov_inv, dv_max)
-    emu.train(torch.Tensor(train_samples), torch.Tensor(train_data_vectors), torch.Tensor(validation_samples), torch.Tensor(validation_data_vectors),\
-                      batch_size=config.batch_size, n_epochs=config.n_epochs)
-    print("out put to model")
-    emu.save(config.savedir + '/model')
-elif(config.emu_type=='gp'):
-    print("Gaussian Progression NOT implemented yet")
-    quit()
+device = "cuda" #if torch.cuda.is_available() else "cpu" #KZ
+    
+TS = torch.Tensor(train_samples)
+TS.to(device)
+
+TDV = torch.Tensor(train_data_vectors)
+TDV.to(device)
+
+VS = torch.Tensor(validation_samples)
+VS.to(device)
+
+VDV = torch.Tensor(validation_data_vectors)
+VDV.to(device)
+
+
+emu = NNEmulator(config.n_dim, OUTPUT_DIM, dv_fid, dv_std, cov_inv, dv_max, device)
+emu.train(TS, TDV, VS, VDV, batch_size=config.batch_size, n_epochs=config.n_epochs)
+print("out put to model")
+emu.save(config.savedir + '/model')
 
 
 print("DONE!!")    

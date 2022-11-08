@@ -58,18 +58,23 @@ def get_local_data_vector_list(params_list, rank):
     train_params_list      = []
     train_data_vector_list = []
     N_samples = len(params_list)
-    N_local   = N_samples // size    
+    N_local   = N_samples // size
+    count = 0    
     for i in range(rank * N_local, (rank + 1) * N_local):
         params_arr  = np.array(list(params_list[i].values()))
         data_vector = cocoa_model.calculate_data_vector(params_list[i])
         train_params_list.append(params_arr)
         train_data_vector_list.append(data_vector)
+        if rank==0:
+            count +=1
+        if rank==0 and count % 50 == 0:
+            print("calculation progress, count = ", count)
     return train_params_list, train_data_vector_list
-
 
 ##should implement a BLOCK here for MPI safety
 def get_data_vectors(params_list, comm, rank):
     local_params_list, local_data_vector_list = get_local_data_vector_list(params_list, rank)
+    comm.Barrier()
     if rank!=0:
         comm.send([local_params_list, local_data_vector_list], dest=0)
         train_params       = None
@@ -105,10 +110,10 @@ except:
             
 train_samples, train_data_vectors = get_data_vectors(params_list, comm, rank)    
     
-print("checking train sample shape: ", np.shape(train_samples))
-print("checking dv set shape: ", np.shape(train_data_vectors))
-    # ================== Train emulator ==========================
+
 if(rank==0):
+    print("checking train sample shape: ", np.shape(train_samples))
+    print("checking dv set shape: ", np.shape(train_data_vectors))
     # ================== Chi_sq cut ==========================
     print("not applying chi2 cut")
     try:

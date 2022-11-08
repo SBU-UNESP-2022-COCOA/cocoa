@@ -78,8 +78,10 @@ axs[1].set_xticks(np.arange(min(ind[nxip:nxip+nxim]), max(ind[nxip:nxip+nxim]), 
 for i in np.arange(min(ind[nxip:nxip+nxim]), max(ind[nxip:nxip+nxim]), 20.0):
     axs[1].axvline(x=i, color ='grey', alpha = 0.15, ls='--', lw=1)
 
-print("testing: ", residue[550])
-print(error)
+#print("testing: ", residue[550])
+#print(error)
+
+print('delta_dv / dv_exact = ', (dv_emu - dv_true)/dv_true)
 
 plt.tight_layout()
 plt.savefig("plotdv1.pdf")

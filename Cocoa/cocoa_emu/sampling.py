@@ -158,6 +158,8 @@ class EmuSampler:
         return datavector
 
     def get_data_vector_emu(self, theta):
+        print(-self.n_fast_pars)
+        print(theta)
         theta_emu     = theta[:-self.n_fast_pars]
         datavector = self.compute_datavector(theta_emu)
         if self.probe!='cosmic_shear':
@@ -199,10 +201,10 @@ class EmuSampler:
         model_datavector = self.get_data_vector_emu(theta)
         delta_dv = (model_datavector - self.dv_obs)[self.mask]
         ln_lkl = -0.5 * delta_dv @ self.masked_inv_cov @ delta_dv  
-        print("testing", ln_lkl)
+        #print("testing", ln_lkl)
         return ln_lkl      
 
     def ln_prob(self, theta, temper=1.):
         ln_prob = self.ln_prior(theta) + temper * self.ln_lkl(theta)
-        print("testing", ln_prob)
+        #print("testing", ln_prob)
         return ln_prob

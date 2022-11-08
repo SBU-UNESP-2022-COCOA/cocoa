@@ -18,14 +18,14 @@ logA_min = 2.84
 logA_max = 3.21
 w_min = -1.3
 w_max = -0.7
-LSST_DZ_min_1 = -0.02 # this is 4sigma of the normal distribution
-LSST_DZ_max_1 = 0.02
+LSST_DZ_min_1 = -0.16 # this is 4sigma of the normal distribution
+LSST_DZ_max_1 = 0.16
 LSST_DZ_min_2 = -0.008 # this is 4sigma of the normal distribution
 LSST_DZ_max_2 = 0.008
-LSST_DZ_min_3 = -0.008 # this is 4sigma of the normal distribution
-LSST_DZ_max_3 = 0.008
-LSST_DZ_min_4 = -0.012 # this is 4sigma of the normal distribution
-LSST_DZ_max_4 = 0.012
+LSST_DZ_min_3 = -0.08 # this is 4sigma of the normal distribution
+LSST_DZ_max_3 = 0.08
+LSST_DZ_min_4 = -0.28 # this is 4sigma of the normal distribution
+LSST_DZ_max_4 = 0.28
 LSST_DZ_min_5 = -0.008 # this is 4sigma of the normal distribution
 LSST_DZ_max_5 = 0.008
 LSST_A1_1_min = -5
@@ -33,8 +33,18 @@ LSST_A1_1_max = +5
 LSST_A1_2_min = -5
 LSST_A1_2_max = +5
 
-root_chains = ('projects/lsst_y1/chains/EXAMPLE_MCMC1',
-               'projects/lsst_y1/chains/EXAMPLE_MCMC13',
+root_chains = ('projects/lsst_y1/chains/EXAMPLE_MCMC57',
+               'projects/lsst_y1/chains/EXAMPLE_MCMC58',
+               'projects/lsst_y1/chains/EXAMPLE_MCMC59',
+               'projects/lsst_y1/chains/EXAMPLE_MCMC60',
+               'projects/lsst_y1/chains/EXAMPLE_MCMC61',
+               'projects/lsst_y1/chains/EXAMPLE_MCMC62',
+               'projects/lsst_y1/chains/EXAMPLE_MCMC63',
+               'projects/lsst_y1/chains/EXAMPLE_MCMC64',
+               'projects/lsst_y1/chains/EXAMPLE_MCMC65',
+               'projects/lsst_y1/chains/EXAMPLE_MCMC67',
+               'projects/lsst_y1/chains/EXAMPLE_MCMC68',
+               'projects/lsst_y1/chains/EXAMPLE_MCMC69',
     )
 
 num_points_thin = 25000
@@ -108,18 +118,23 @@ boundary = [[logA_min, logA_max],
             [LSST_A1_1_min, LSST_A1_1_max], [LSST_A1_2_min, LSST_A1_2_max]
             ]
 
+print(samples_list[0])
 ###NOTE: be careful with the order
 for i in range(len(samples_list)):
     for j in range(len(samples_list[0])):
         if samples_list[i][j] < boundary[j][0] or samples_list[i][j] > boundary[j][1] :
             rows_to_delete.append(int(i))
+            print("for gaussian approx, there should be no cut if yaml set correct bound. But not true at line: ", i)
+            quit()
+
             continue
 
 
 #print(rows_to_delete[2], samples_list[1])
 samples_list = np.delete(samples_list, rows_to_delete , 0)
 
-samples_list = np.random.shuffle(samples_list) #Shuffle the results
+#something weird with shuffling large number, move the shuffle to train_emulator.py
+#samples_list = np.random.shuffle(samples_list) #Shuffle the results
 
 print("shape of the samples after boundary correction: ", np.shape(samples_list))
 
