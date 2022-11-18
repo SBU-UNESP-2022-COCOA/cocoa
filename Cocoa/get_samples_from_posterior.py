@@ -1,7 +1,7 @@
 import getdist.plots as gplot
 from getdist import MCSamples
 from getdist import loadMCSamples
-import os
+import os, sys
 import numpy as np
 
 
@@ -33,21 +33,41 @@ LSST_A1_1_max = +5
 LSST_A1_2_min = -5
 LSST_A1_2_max = +5
 
+num_points_thin = 40000
+
 root_chains = ('projects/lsst_y1/chains/EXAMPLE_MCMC57',
-               'projects/lsst_y1/chains/EXAMPLE_MCMC58',
-               'projects/lsst_y1/chains/EXAMPLE_MCMC59',
-               'projects/lsst_y1/chains/EXAMPLE_MCMC60',
-               'projects/lsst_y1/chains/EXAMPLE_MCMC61',
-               'projects/lsst_y1/chains/EXAMPLE_MCMC62',
-               'projects/lsst_y1/chains/EXAMPLE_MCMC63',
-               'projects/lsst_y1/chains/EXAMPLE_MCMC64',
-               'projects/lsst_y1/chains/EXAMPLE_MCMC65',
-               'projects/lsst_y1/chains/EXAMPLE_MCMC67',
-               'projects/lsst_y1/chains/EXAMPLE_MCMC68',
-               'projects/lsst_y1/chains/EXAMPLE_MCMC69',
+               #'projects/lsst_y1/chains/EXAMPLE_MCMC58',
+               #'projects/lsst_y1/chains/EXAMPLE_MCMC59',
+               #'projects/lsst_y1/chains/EXAMPLE_MCMC60',
+               #'projects/lsst_y1/chains/EXAMPLE_MCMC61',
+               #'projects/lsst_y1/chains/EXAMPLE_MCMC62',
+               #'projects/lsst_y1/chains/EXAMPLE_MCMC63',
+               #'projects/lsst_y1/chains/EXAMPLE_MCMC64',
+               #'projects/lsst_y1/chains/EXAMPLE_MCMC65',
+               #'projects/lsst_y1/chains/EXAMPLE_MCMC66',
+               #'projects/lsst_y1/chains/EXAMPLE_MCMC67',
+               #'projects/lsst_y1/chains/EXAMPLE_MCMC68',
+               #'projects/lsst_y1/chains/EXAMPLE_MCMC69',
+               #'projects/lsst_y1/chains/EXAMPLE_MCMC74',
     )
 
-num_points_thin = 25000
+###validation
+# root_chains = ( 'projects/lsst_y1/emulator_validation/chains/EXAMPLE_MCMC57',
+#                   'projects/lsst_y1/emulator_validation/chains/EXAMPLE_MCMC58',
+#                   'projects/lsst_y1/emulator_validation/chains/EXAMPLE_MCMC59',
+#                   'projects/lsst_y1/emulator_validation/chains/EXAMPLE_MCMC60',
+#                   'projects/lsst_y1/emulator_validation/chains/EXAMPLE_MCMC61',
+#                   'projects/lsst_y1/emulator_validation/chains/EXAMPLE_MCMC62',
+#                   'projects/lsst_y1/emulator_validation/chains/EXAMPLE_MCMC63',
+#                   'projects/lsst_y1/emulator_validation/chains/EXAMPLE_MCMC64',
+#                   'projects/lsst_y1/emulator_validation/chains/EXAMPLE_MCMC65',
+#                   'projects/lsst_y1/emulator_validation/chains/EXAMPLE_MCMC66',
+#                   'projects/lsst_y1/emulator_validation/chains/EXAMPLE_MCMC67',
+#                   'projects/lsst_y1/emulator_validation/chains/EXAMPLE_MCMC68',
+#                   'projects/lsst_y1/emulator_validation/chains/EXAMPLE_MCMC69',
+# )
+
+
 
 analysissettings={'smooth_scale_1D':0.35,'smooth_scale_2D':0.35,'ignore_rows': u'0.5',
 'range_confidence' : u'0.005'}
@@ -87,6 +107,8 @@ for i in range(len(root_chains)):
     samples.ranges.setRange('LSST_DZ_S5', [LSST_DZ_min_5 , LSST_DZ_max_5])
     samples.ranges.setRange('LSST_A1_1', [LSST_A1_1_min , LSST_A1_1_max])
     samples.ranges.setRange('LSST_A1_2', [LSST_A1_2_min , LSST_A1_2_max])
+
+    print("length of this chain: ", len(p.logA))
     
     logA = np.append(logA, p.logA)
     ns = np.append(ns, p.ns)
@@ -136,9 +158,16 @@ samples_list = np.delete(samples_list, rows_to_delete , 0)
 #something weird with shuffling large number, move the shuffle to train_emulator.py
 #samples_list = np.random.shuffle(samples_list) #Shuffle the results
 
-print("shape of the samples after boundary correction: ", np.shape(samples_list))
+###validation
+#print('validation set')
+#np.save('projects/lsst_y1/emulator_validation/train_validation_samples.npy', samples_list)
 
 np.save('projects/lsst_y1/emulator_output/post/samples_from_posterior.npy', samples_list)
+
+
+print("shape of the samples after boundary correction: ", np.shape(samples_list))
+
+
 
 
 

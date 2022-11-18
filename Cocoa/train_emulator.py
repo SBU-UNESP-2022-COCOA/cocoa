@@ -2,9 +2,11 @@ import sys,os
 import numpy as np
 import torch
 
+torch.set_default_dtype(torch.double) #This is important
+
 sys.path.insert(0, os.path.abspath(".."))
 
-from cocoa_emu import Config
+from cocoa_emu.config import Config
 #from cocoa_emu.emulator import NNEmulator, GPEmulator  #KZ: not working, no idea why
 from cocoa_emu import NNEmulator  #KZ: not working, no idea why
 
@@ -25,8 +27,9 @@ print("length of samples from LHS: ", len(train_samples))
 if config.probe=='cosmic_shear':
     print("training for cosmic shear only")
     OUTPUT_DIM = 780
+    #OUTPUT_DIM = 26 # test first bin
     train_data_vectors = train_data_vectors[:,:OUTPUT_DIM]
-    cov_inv = np.linalg.inv(config.cov)[0:OUTPUT_DIM, 0:OUTPUT_DIM] #NO mask here for cov_inv enters training
+    cov_inv = np.linalg.inv(config.cov[0:OUTPUT_DIM, 0:OUTPUT_DIM])#NO mask here for cov_inv enters training
     mask_cs = config.mask[0:OUTPUT_DIM]
     
     dv_fid =config.dv_fid[0:OUTPUT_DIM]
@@ -87,31 +90,33 @@ train_data_vectors = train_data_vectors / dv_max
 
 
 ###============= Setting up validation set ============
-validation_samples = np.load('./projects/lsst_y1/emulator_output/emu_test/test_samples.npy')
-validation_data_vectors = np.load('./projects/lsst_y1/emulator_output/emu_test/test_data_vectors.npy')[:,:OUTPUT_DIM]
+validation_samples = np.load('./projects/lsst_y1/emulator_output/emu_validation/validation_samples.npy')
+validation_data_vectors = np.load('./projects/lsst_y1/emulator_output/emu_validation/validation_data_vectors.npy')[:,:OUTPUT_DIM]
 #        ====================chi2 cut for test dvs===========================
-select_chi_sq = get_chi_sq_cut(validation_data_vectors, 7000)
-selected_obj = np.sum(select_chi_sq)
-total_obj    = len(select_chi_sq)
-        
-validation_data_vectors = validation_data_vectors[select_chi_sq]
-validation_samples      = validation_samples[select_chi_sq]
+print("no chi2 for validation dvs, if validation is from chains")
+# select_chi_sq = get_chi_sq_cut(validation_data_vectors, 7000)
+# selected_obj = np.sum(select_chi_sq)
+# total_obj    = len(select_chi_sq)      
+# validation_data_vectors = validation_data_vectors[select_chi_sq]
+# validation_samples      = validation_samples[select_chi_sq]
 
 print("validation samples after chi2 cut: ", len(validation_samples))
 
 
+#KZ: 11.11 actually shuffel is not needed. there's option in the dataloader at training
 ##### shuffeling #####
-def unison_shuffled_copies(a, b):
-    assert len(a) == len(b)
-    p = np.random.permutation(len(a))
-    return a[p], b[p]
+# def unison_shuffled_copies(a, b):
+#     assert len(a) == len(b)
+#     p = np.random.permutation(len(a))
+#     return a[p], b[p]
 
-train_samples, train_data_vectors = unison_shuffled_copies(train_samples, train_data_vectors)
-validation_samples, validation_data_vectors = unison_shuffled_copies(validation_samples, validation_data_vectors)
+# train_samples, train_data_vectors = unison_shuffled_copies(train_samples, train_data_vectors)
+# validation_samples, validation_data_vectors = unison_shuffled_copies(validation_samples, validation_data_vectors)
 
 
-print("Training emulator...")
+print("Training emulator... batch_size = ", config.batch_size, " n_epochs = ", config.n_epochs)
 device = "cuda" #if torch.cuda.is_available() else "cpu" #KZ
+#device = "cpu"
     
 TS = torch.Tensor(train_samples)
 TS.to(device)
