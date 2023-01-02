@@ -10,7 +10,8 @@ epoch = np.arange(len(losses_test)) + 1
 plt.plot(epoch, losses_train, 'o-', label="loss_train")
 plt.plot(epoch, losses_test,  'o-',  label="loss_validation")
 
-plt.ylim([0,100])
+# plt.ylim([0,10])
+plt.yscale('log')
 
 plt.xlabel('Epoch')
 plt.ylabel('Loss')

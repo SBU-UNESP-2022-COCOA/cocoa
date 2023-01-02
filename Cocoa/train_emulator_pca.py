@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.abspath(".."))
 
 from cocoa_emu import Config
 #from cocoa_emu.emulator import NNEmulator, GPEmulator  #KZ: not working, no idea why
-from cocoa_emu import NNEmulator #KZ: not working, no idea why
+from cocoa_emu import NNEmulator, nn_pca_emulator  #KZ: not working, no idea why
 
 debug=False
 
@@ -107,16 +107,29 @@ if len(sys.argv) > 3:
 print("Total samples enter the training: ", len(train_samples))
 
 ##Normalize the data vectors for training based on the maximum##
-dv_max = np.abs(train_data_vectors).max(axis=0)
-train_data_vectors = train_data_vectors / dv_max
+#dv_max = np.abs(train_data_vectors).max(axis=0)
+#train_data_vectors = train_data_vectors / dv_max
 
 
 ###============= Setting up validation set ============
 validation_samples = np.load('./projects/lsst_y1/emulator_output/emu_validation/noshift/validation_samples.npy')
 validation_data_vectors = np.load('./projects/lsst_y1/emulator_output/emu_validation/noshift/validation_data_vectors.npy')[:,:OUTPUT_DIM]
 #====================chi2 cut for test dvs===========================
+select_chi_sq = get_chi_sq_cut(validation_data_vectors, 7000)
+selected_obj = np.sum(select_chi_sq)
+total_obj    = len(select_chi_sq)
 
-print("not doing chi2 cut")
+if debug:
+    print('(debug)')
+    print('validation')
+    #print(validation_samples[0])
+    #print(validation_data_vectors[0])
+    print('(end debug)')
+        
+validation_data_vectors = validation_data_vectors[select_chi_sq]
+validation_samples      = validation_samples[select_chi_sq]
+
+print("validation samples after chi2 cut: ", len(validation_samples))
 
 
 ##### shuffeling #####
@@ -128,7 +141,51 @@ def unison_shuffled_copies(a, b):
 train_samples, train_data_vectors = unison_shuffled_copies(train_samples, train_data_vectors)
 validation_samples, validation_data_vectors = unison_shuffled_copies(validation_samples, validation_data_vectors)
 
+# Convert to eigenbasis if PCA
 
+
+
+n_PCA = 780
+if n_PCA != 0 :
+    #open data
+    lsst_cov = config.cov[0:OUTPUT_DIM,0:OUTPUT_DIM] #np.loadtxt('lsst_y1_cov.txt')
+    lsst_fid = config.dv_fid[0:OUTPUT_DIM] #np.loadtxt('lsst_y1_fid.txt')
+
+    #print(lsst_cov.shape)
+    #print(lsst_fid.shape)
+
+    # do diagonalization C = QLQ^(T)
+    eigensys = np.linalg.eig(lsst_cov)
+    evals = eigensys[0]
+    evecs = eigensys[1]
+
+    # truncate PCAs
+    # we need to keep ALL indices, cant forget unmodelled dimensions add to loss.
+    sorted_idxs = np.argsort(1/evals)
+    pc_idxs = sorted_idxs[:n_PCA]
+    non_pc_idxs = sorted_idxs[n_PCA:] 
+    #pca_vecs = evecs[pc_idxs]
+
+    print('pca idxs   :',len(pc_idxs))
+    print('nonpca idxs:',len(non_pc_idxs))
+
+    # Now we change basis to the eigenbasis
+    dv = np.array([dv_fid for _ in range(len(train_data_vectors))])
+    train_data_vectors = np.transpose((np.linalg.inv(evecs) @ np.transpose(train_data_vectors - dv)))#[pc_idxs])
+    dv = np.array([dv_fid for _ in range(len(validation_data_vectors))])
+    validation_data_vectors = np.transpose((np.linalg.inv(evecs) @ np.transpose(validation_data_vectors - dv)))#[pc_idxs])
+
+    cov_inv_pc = np.diag(1/evals[pc_idxs])
+    cov_inv_npc = np.diag(1/evals[non_pc_idxs])
+    dv_std = np.sqrt(evals)
+
+    print('cov inv pc shape:',cov_inv_pc.shape)
+    print('cov inv non-pc shape:',cov_inv_npc.shape)
+    # fix output dim
+    OUTPUT_DIM = n_PCA
+
+#    if debug:
+    #print('[ debug ]   PCA bais training DV array shape:', train_data_vectors.shape)#, file=sys.stderr)
 
 #print("Training emulator...")
 # cuda or cpu
@@ -138,6 +195,7 @@ else:
     device = 'cpu'
     torch.set_num_interop_threads(60) # Inter-op parallelism
     torch.set_num_threads(60) # Intra-op parallelism
+
 
 print('Using device: ',device)
     
@@ -150,14 +208,13 @@ VS = torch.Tensor(validation_samples)
 VDV = torch.Tensor(validation_data_vectors)
 #VDV.to(device)
 
-print("training with the following hyper paraters: batch_size = ", config.batch_size, 'n_epochs = ', config.n_epochs)
-emu = NNEmulator(config.n_dim, OUTPUT_DIM, 
-                        dv_fid, dv_std, cov_inv, dv_max, 
-                        device)
+emu = nn_pca_emulator(config.n_dim, OUTPUT_DIM, 
+                        dv_fid, dv_std, cov_inv_pc,cov_inv_npc, 
+                        pc_idxs, non_pc_idxs, lsst_cov,
+                        device, reduce_lr=False)#, PCA_vecs=pca_vecs)
 emu.train(TS, TDV, VS, VDV, batch_size=config.batch_size, n_epochs=config.n_epochs)
 print("model saved to ",str(config.savedir))
 emu.save(config.savedir + '/model_1')
-##KZ: 12/31/2022: The bin-by-bin version of this file was accidentally deleted. should be able to get back with the convention in plot_validation
 
 
 print("DONE!!")   

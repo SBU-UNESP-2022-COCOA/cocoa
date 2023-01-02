@@ -6,7 +6,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import os
 import torch
-from cocoa_emu import Config, NNEmulator
+from cocoa_emu import Config, nn_pca_emulator
 from cocoa_emu.sampling import EmuSampler
 
 torch.set_default_dtype(torch.double)
@@ -58,6 +58,9 @@ dv_validation      = np.load('projects/lsst_y1/emulator_output/lhs/dvs_for_train
 if config.probe =='cosmic_shear':
     dv_validation = dv_validation[:,:OUTPUT_DIM]
     mask = config.mask[0:OUTPUT_DIM]
+
+    dv_fid =config.dv_fid[0:OUTPUT_DIM]
+    dv_std = config.dv_std[0:OUTPUT_DIM]
 else:
     print("3x2 not tested")
     quit()
@@ -170,7 +173,26 @@ end_idx   = 0
 #The loop below is to get dv_predict of ALL samples, bin by bin.
 for i in range(BIN_NUMBER):
     device='cuda'
-    emu = NNEmulator(config.n_dim, BIN_SIZE, config.dv_fid, config.dv_std, cov_inv, config.dv_fid, device) #should privde dv_max instead of dv_fid, but emu.load will make it correct
+
+    n_PCA = 780
+    lsst_cov = config.cov[0:OUTPUT_DIM,0:OUTPUT_DIM] #np.loadtxt('lsst_y1_cov.txt')
+    lsst_fid = config.dv_fid[0:OUTPUT_DIM] #np.loadtxt('lsst_y1_fid.txt')
+    # do diagonalization C = QLQ^(T)
+    eigensys = np.linalg.eig(lsst_cov)
+    evals = eigensys[0]
+    evecs = eigensys[1]
+
+    # truncate PCAs
+    # we need to keep ALL indices, cant forget unmodelled dimensions add to loss.
+    sorted_idxs = np.argsort(1/evals)
+    pc_idxs = sorted_idxs[:n_PCA]
+    non_pc_idxs = sorted_idxs[n_PCA:] 
+    cov_inv_pc = np.diag(1/evals[pc_idxs])
+    cov_inv_npc = np.diag(1/evals[non_pc_idxs])
+    emu = nn_pca_emulator(config.n_dim, OUTPUT_DIM, 
+                        dv_fid, dv_std, cov_inv_pc,cov_inv_npc, 
+                        pc_idxs, non_pc_idxs, lsst_cov,
+                        device, reduce_lr=False)#, PCA_vecs=pca_vecs)
     emu.load('projects/lsst_y1/emulator_output/models/model_' + str(i+1))
     print('emulator loaded', i+1)
     tmp = []

@@ -33,27 +33,29 @@ LSST_A1_1_max = +5
 LSST_A1_2_min = -5
 LSST_A1_2_max = +5
 
-num_points_thin = 800000
-
-root_chains = ('projects/lsst_y1/chains/EXAMPLE_MCMC57',
-               #'projects/lsst_y1/chains/EXAMPLE_MCMC58',
-               #'projects/lsst_y1/chains/EXAMPLE_MCMC59',
-               #'projects/lsst_y1/chains/EXAMPLE_MCMC60',
-               #'projects/lsst_y1/chains/EXAMPLE_MCMC61',
-               #'projects/lsst_y1/chains/EXAMPLE_MCMC62',
-               #'projects/lsst_y1/chains/EXAMPLE_MCMC63',
-               #'projects/lsst_y1/chains/EXAMPLE_MCMC64',
-               #'projects/lsst_y1/chains/EXAMPLE_MCMC65',
-               #'projects/lsst_y1/chains/EXAMPLE_MCMC66',
-               #'projects/lsst_y1/chains/EXAMPLE_MCMC67',
-               #'projects/lsst_y1/chains/EXAMPLE_MCMC68',
-               #'projects/lsst_y1/chains/EXAMPLE_MCMC69',
-               #'projects/lsst_y1/chains/EXAMPLE_MCMC74',
-    )
+num_points_thin = 5000
 
 
+###validation
+root_chains = (   #'projects/lsst_y1/emulator_validation/chains/EXAMPLE_MCMC57',
+                  # 'projects/lsst_y1/emulator_validation/chains/EXAMPLE_MCMC58',
+                  # 'projects/lsst_y1/emulator_validation/chains/EXAMPLE_MCMC59',
+                  # 'projects/lsst_y1/emulator_validation/chains/EXAMPLE_MCMC60',
+                  # 'projects/lsst_y1/emulator_validation/chains/EXAMPLE_MCMC61',
+                  # 'projects/lsst_y1/emulator_validation/chains/EXAMPLE_MCMC62',
+                  # 'projects/lsst_y1/emulator_validation/chains/EXAMPLE_MCMC63',
+                  # 'projects/lsst_y1/emulator_validation/chains/EXAMPLE_MCMC64',
+                  # 'projects/lsst_y1/emulator_validation/chains/EXAMPLE_MCMC65',
+                  # 'projects/lsst_y1/emulator_validation/chains/EXAMPLE_MCMC66',
+                  # 'projects/lsst_y1/emulator_validation/chains/EXAMPLE_MCMC67',
+                  # 'projects/lsst_y1/emulator_validation/chains/EXAMPLE_MCMC68',
+                  # 'projects/lsst_y1/emulator_validation/chains/EXAMPLE_MCMC69',
+                  'projects/lsst_y1/emulator_validation/chains/EXAMPLE_MCMC80',
+)
 
-analysissettings={'smooth_scale_1D':0.35,'smooth_scale_2D':0.35,'ignore_rows': u'0.3',
+
+
+analysissettings={'smooth_scale_1D':0.35,'smooth_scale_2D':0.35,'ignore_rows': u'0.5',
 'range_confidence' : u'0.005'}
 
 
@@ -124,15 +126,14 @@ boundary = [[logA_min, logA_max],
             [LSST_A1_1_min, LSST_A1_1_max], [LSST_A1_2_min, LSST_A1_2_max]
             ]
 
-print(samples_list[0])
 ###NOTE: be careful with the order
 for i in range(len(samples_list)):
     for j in range(len(samples_list[0])):
         if samples_list[i][j] < boundary[j][0] or samples_list[i][j] > boundary[j][1] :
             rows_to_delete.append(int(i))
-            print("for gaussian approx, there should be no cut if yaml set correct bound. But not true at line: ", i)
-            quit()
-
+            # print("for gaussian approx, there should be no cut if yaml set correct bound. But not true at line: ", i)
+            # print("which has:", samples_list[i])
+            # quit()
             continue
 
 
@@ -142,8 +143,10 @@ samples_list = np.delete(samples_list, rows_to_delete , 0)
 #something weird with shuffling large number, move the shuffle to train_emulator.py
 #samples_list = np.random.shuffle(samples_list) #Shuffle the results
 
-print("out put to projects/lsst_y1/emulator_output/post/samples_from_posterior.npy")
-np.save('projects/lsst_y1/emulator_output/post/samples_from_posterior.npy', samples_list)
+###validation
+print('validation set')
+np.save('projects/lsst_y1/emulator_validation/train_validation_samples.npy', samples_list)
+
 
 
 print("shape of the samples after boundary correction: ", np.shape(samples_list))
