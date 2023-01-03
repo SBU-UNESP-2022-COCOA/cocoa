@@ -45,15 +45,17 @@ os.environ["OMP_NUM_THREADS"] = "1"
 configfile = './projects/lsst_y1/train_emulator.yaml'
 config = Config(configfile)
 
-# samples_validation = np.load('projects/lsst_y1/emulator_output/emu_validation/noshift' + '/validation_samples.npy')
-# dv_validation      = np.load('projects/lsst_y1/emulator_output/emu_validation/noshift' + '/validation_data_vectors.npy')
+samples_validation = np.load('projects/lsst_y1/emulator_output/emu_validation/noshift' + '/validation_samples.npy')[-1:]
+dv_validation      = np.load('projects/lsst_y1/emulator_output/emu_validation/noshift' + '/validation_data_vectors.npy')[-1:]
 
 # samples_validation = np.load('projects/lsst_y1/emulator_output/emu_validation/noshift_withCMB' + '/validation_samples.npy')
 # dv_validation      = np.load('projects/lsst_y1/emulator_output/emu_validation/noshift_withCMB' + '/validation_data_vectors.npy')
 
 
-samples_validation = np.load('projects/lsst_y1/emulator_output/lhs/dvs_for_training_30k/train_30k_samples.npy')
-dv_validation      = np.load('projects/lsst_y1/emulator_output/lhs/dvs_for_training_30k/train_30k_data_vectors.npy')
+# samples_validation = np.load('projects/lsst_y1/emulator_output/lhs/dvs_for_training_30k/train_30k_samples.npy')
+# dv_validation      = np.load('projects/lsst_y1/emulator_output/lhs/dvs_for_training_30k/train_30k_data_vectors.npy')
+
+
 
 if config.probe =='cosmic_shear':
     dv_validation = dv_validation[:,:OUTPUT_DIM]
@@ -61,7 +63,8 @@ if config.probe =='cosmic_shear':
 else:
     print("3x2 not tested")
     quit()
-
+    
+cov            = config.cov[0:OUTPUT_DIM, 0:OUTPUT_DIM]
 cov_inv        = np.linalg.inv(config.cov[0:OUTPUT_DIM, 0:OUTPUT_DIM])
 cov_inv_masked = np.linalg.inv(config.cov[0:OUTPUT_DIM, 0:OUTPUT_DIM][mask][:,mask])
 
@@ -145,8 +148,8 @@ for i in range(len(samples_validation)):
         rows_to_delete.append(int(i))
         continue
 
-samples_validation = np.delete(samples_validation, rows_to_delete , 0)
-dv_validation      = np.delete(dv_validation, rows_to_delete , 0)
+# samples_validation = np.delete(samples_validation, rows_to_delete , 0)
+# dv_validation      = np.delete(dv_validation, rows_to_delete , 0)
 
 logA = samples_validation[:,0]
 ns = samples_validation[:,1]
@@ -164,21 +167,27 @@ bin_count = 0
 start_idx = 0
 end_idx   = 0
 
+##TESTING
+eigensys = np.linalg.eig(cov)
+evals = eigensys[0]
+evecs = eigensys[1]
+##TESGING
 
 #Loop over the models glue them together
 #It's more intuitive to take one sample at a time, but that would require too many loading of the emulator
 #The loop below is to get dv_predict of ALL samples, bin by bin.
 for i in range(BIN_NUMBER):
     device='cuda'
-    emu = NNEmulator(config.n_dim, BIN_SIZE, config.dv_fid, config.dv_std, cov_inv, config.dv_fid, device) #should privde dv_max instead of dv_fid, but emu.load will make it correct
+    emu = NNEmulator(config.n_dim, BIN_SIZE, config.dv_fid, config.dv_std, cov, config.dv_fid, device) #should privde dv_max instead of dv_fid, but emu.load will make it correct
     emu.load('projects/lsst_y1/emulator_output/models/model_' + str(i+1))
     print('emulator loaded', i+1)
     tmp = []
     for j in range(len(samples_validation)):
 
         theta = torch.Tensor(samples_validation[j])
-
         dv_emu = emu.predict(theta)[0]
+
+
         tmp.append(dv_emu)
     tmp = np.array(tmp)
 
@@ -187,6 +196,28 @@ for i in range(BIN_NUMBER):
     else:
         dv_predict = np.append(dv_predict, tmp, axis = 1)
 
+###=============TESTING
+#change of basis is correct
+test1 = dv_predict[0]
+test2 = np.transpose((np.linalg.inv(evecs) @ np.transpose(test1 - config.dv_fid[0:780])))
+test3 = test2 @ np.transpose(evecs) + config.dv_fid[0:780]
+test4 = np.transpose((np.linalg.inv(evecs) @ np.transpose(dv_validation[0] - config.dv_fid[0:780])))
+test5 = test2-test4
+print("TESTING last 3",test1[-3:], test2[-3:], test3[-3:])
+print("TESTING first 3",test1[0:3], test2[0:3], test3[0:3])
+print("TESTIN2",test4[-3:])
+
+
+
+#print(np.shape(test1), np.shape(dv_validation[0]))
+chi21 = get_chi2(test1, dv_validation[0], mask, cov_inv_masked)
+L_inv = np.diag(1/evals[mask])
+print(np.shape(test2[mask]), np.shape(L_inv))
+chi22 = test5[mask] @ L_inv @ test5[mask]
+
+print("TESTING",chi21, chi22)
+# quit()
+#######========TESTING
 
 
 print("testing", np.shape(dv_predict))

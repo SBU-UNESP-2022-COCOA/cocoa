@@ -5,8 +5,7 @@ import torch
 sys.path.insert(0, os.path.abspath(".."))
 
 from cocoa_emu import Config
-#from cocoa_emu.emulator import NNEmulator, GPEmulator  #KZ: not working, no idea why
-from cocoa_emu import NNEmulator #KZ: not working, no idea why
+from cocoa_emu import NNEmulator
 
 debug=False
 
@@ -43,6 +42,7 @@ if config.probe=='cosmic_shear':
     print("training for cosmic shear only")
     OUTPUT_DIM = 780
     train_data_vectors = train_data_vectors[:,:OUTPUT_DIM]
+    cov     = config.cov[0:OUTPUT_DIM, 0:OUTPUT_DIM]
     cov_inv = np.linalg.inv(config.cov)[0:OUTPUT_DIM, 0:OUTPUT_DIM] #NO mask here for cov_inv enters training
     mask_cs = config.mask[0:OUTPUT_DIM]
     
@@ -51,6 +51,7 @@ if config.probe=='cosmic_shear':
 elif config.probe=='3x2pt':
     print("trianing for 3x2pt")
     train_data_vectors = train_data_vectors
+    cov     = config.cov
     cov_inv = np.linalg.inv(config.cov) #NO mask here for cov_inv enters training
     OUTPUT_DIM = config.output_dim #config will do it automatically, check config.py
     dv_fid =config.dv_fid
@@ -106,29 +107,28 @@ if len(sys.argv) > 3:
 
 print("Total samples enter the training: ", len(train_samples))
 
-##Normalize the data vectors for training based on the maximum##
-dv_max = np.abs(train_data_vectors).max(axis=0)
-train_data_vectors = train_data_vectors / dv_max
-
-
 ###============= Setting up validation set ============
-validation_samples = np.load('./projects/lsst_y1/emulator_output/emu_validation/noshift/validation_samples.npy')
-validation_data_vectors = np.load('./projects/lsst_y1/emulator_output/emu_validation/noshift/validation_data_vectors.npy')[:,:OUTPUT_DIM]
+validation_samples = np.load('./projects/lsst_y1/emulator_output/emu_validation/noshift/validation_samples.npy')[-1:]
+validation_data_vectors = np.load('./projects/lsst_y1/emulator_output/emu_validation/noshift/validation_data_vectors.npy')[-1:][:,:OUTPUT_DIM]
+
+###============= Normalize the data vectors for training; 
+###============= used to be based on dv_max; but change to eigen-basis is better##
+dv_max = np.abs(train_data_vectors).max(axis=0)
+
+cov = config.cov[0:OUTPUT_DIM,0:OUTPUT_DIM] #np.loadtxt('lsst_y1_cov.txt')
+# do diagonalization C = QLQ^(T); Q is now change of basis matrix
+eigensys = np.linalg.eig(cov)
+evals = eigensys[0]
+evecs = eigensys[1]
+#change of basis
+tmp = np.array([dv_fid for _ in range(len(train_data_vectors))])
+train_data_vectors = np.transpose((np.linalg.inv(evecs) @ np.transpose(train_data_vectors - tmp)))#[pc_idxs])
+tmp = np.array([dv_fid for _ in range(len(validation_data_vectors))])
+validation_data_vectors = np.transpose((np.linalg.inv(evecs) @ np.transpose(validation_data_vectors - tmp)))#[pc_idxs])
+
 #====================chi2 cut for test dvs===========================
 
 print("not doing chi2 cut")
-
-
-##### shuffeling #####
-def unison_shuffled_copies(a, b):
-    assert len(a) == len(b)
-    p = np.random.permutation(len(a))
-    return a[p], b[p]
-
-train_samples, train_data_vectors = unison_shuffled_copies(train_samples, train_data_vectors)
-validation_samples, validation_data_vectors = unison_shuffled_copies(validation_samples, validation_data_vectors)
-
-
 
 #print("Training emulator...")
 # cuda or cpu
@@ -152,7 +152,7 @@ VDV = torch.Tensor(validation_data_vectors)
 
 print("training with the following hyper paraters: batch_size = ", config.batch_size, 'n_epochs = ', config.n_epochs)
 emu = NNEmulator(config.n_dim, OUTPUT_DIM, 
-                        dv_fid, dv_std, cov_inv, dv_max, 
+                        dv_fid, dv_std, cov, dv_max,
                         device)
 emu.train(TS, TDV, VS, VDV, batch_size=config.batch_size, n_epochs=config.n_epochs)
 print("model saved to ",str(config.savedir))
