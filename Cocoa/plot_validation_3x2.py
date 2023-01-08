@@ -16,8 +16,9 @@ BIN_SIZE   = 26 # number of angular bins in each z-bin
 BIN_NUMBER = 30 # number of z-bins
 
 ##3x2 setting: separate cosmic shear and 2x2pt
-BIN_SIZE   = 780 # number of angular bins in each z-bin
-BIN_NUMBER = 1 # number of z-bins
+BIN_SIZE     = 780 # number of angular bins in each z-bin
+BIN_NUMBER   = 2   # number of z-bins
+INPUT_DIM_CS = 13  # input dim of cosmic shear, excluding for example dz_lens and point-mass parameters
 
 # def get_chi2(theta, dv_exact, mask, cov_inv_masked):
 #     if(config.emu_type=='nn'):
@@ -43,7 +44,7 @@ def get_chi2(dv_predict, dv_exact, mask, cov_inv):
 
 os.environ["OMP_NUM_THREADS"] = "1"
 
-configfile = './projects/lsst_y1/train_emulator.yaml'
+configfile = './projects/lsst_y1/train_emulator_3x2.yaml'
 config = Config(configfile)
 
 # samples_validation = np.load('projects/lsst_y1/emulator_output/emu_validation/noshift' + '/validation_samples.npy')
@@ -53,8 +54,8 @@ config = Config(configfile)
 # dv_validation      = np.load('projects/lsst_y1/emulator_output/emu_validation/noshift_withCMB' + '/validation_data_vectors.npy')
 
 
-samples_validation = np.load('./projects/lsst_y1/emulator_output/emu_validation/lhs/dvs_for_validation/validation_samples.npy')
-dv_validation      = np.load('./projects/lsst_y1/emulator_output/emu_validation/lhs/dvs_for_validation/validation_data_vectors.npy')
+samples_validation = np.load('./projects/lsst_y1/emulator_output_3x2/emu_validation/lhs/dvs_5k/validation_samples.npy')
+dv_validation      = np.load('./projects/lsst_y1/emulator_output_3x2/emu_validation/lhs/dvs_5k/validation_data_vectors.npy')
 
 # samples_validation = np.load('./projects/lsst_y1/emulator_output/post/noshift_100k/train_post_samples.npy')
 # dv_validation      = np.load('./projects/lsst_y1/emulator_output/post/noshift_100k/train_post_data_vectors.npy')
@@ -64,13 +65,17 @@ dv_validation      = np.load('./projects/lsst_y1/emulator_output/emu_validation/
 if config.probe =='cosmic_shear':
     dv_validation = dv_validation[:,:OUTPUT_DIM]
     mask = config.mask[0:OUTPUT_DIM]
+elif config.probe =='3x2pt':
+    dv_validation = dv_validation
+    mask = config.mask
 else:
-    print("3x2 not tested")
+    print('probe not tested')
     quit()
-    
-cov            = config.cov[0:OUTPUT_DIM, 0:OUTPUT_DIM]
-cov_inv        = np.linalg.inv(config.cov[0:OUTPUT_DIM, 0:OUTPUT_DIM])
-cov_inv_masked = np.linalg.inv(config.cov[0:OUTPUT_DIM, 0:OUTPUT_DIM][mask][:,mask])
+
+full_dim       = 1560    
+cov            = config.cov[0:full_dim, 0:full_dim]
+cov_inv        = np.linalg.inv(config.cov[0:full_dim, 0:full_dim])
+cov_inv_masked = np.linalg.inv(config.cov[0:full_dim, 0:full_dim][mask][:,mask])
 
 #print(samples_validation[1])
 
@@ -175,20 +180,53 @@ end_idx   = 0
 #Loop over the models glue them together
 #It's more intuitive to take one sample at a time, but that would require too many loading of the emulator
 #The loop below is to get dv_predict of ALL samples, bin by bin.
-for i in range(BIN_NUMBER):
-    device='cpu'
+
+# for i in range(BIN_NUMBER):
+#     device='cpu'
+#     emu = NNEmulator(config.n_dim, BIN_SIZE, config.dv_fid, config.dv_std, cov, config.dv_fid, device) #should privde dv_max instead of dv_fid, but emu.load will make it correct
+#     emu.load('projects/lsst_y1/emulator_output/models/model_' + str(i+1))
+#     print('emulator loaded', i+1)
+#     tmp = []
+#     for j in range(len(samples_validation)):
+
+#         theta = torch.Tensor(samples_validation[j])
+#         dv_emu = emu.predict(theta)[0]
+
+
+#         tmp.append(dv_emu)
+#     tmp = np.array(tmp)
+
+#     if i==0:
+#         dv_predict = tmp
+#     else:
+#         dv_predict = np.append(dv_predict, tmp, axis = 1)
+
+
+print("validating 3x2pt with seperating cosmic shear and 2x2")
+for i in range(2):
+    device='cuda'
     emu = NNEmulator(config.n_dim, BIN_SIZE, config.dv_fid, config.dv_std, cov, config.dv_fid, device) #should privde dv_max instead of dv_fid, but emu.load will make it correct
-    emu.load('projects/lsst_y1/emulator_output/models/model_' + str(i+1))
-    print('emulator loaded', i+1)
-    tmp = []
-    for j in range(len(samples_validation)):
+    if i ==0:
+        print("using emulator of cosmic shear part")
+        emu.load('projects/lsst_y1/emulator_output/models/model_1')
+        print('emulator loaded cosmic shear')
+        tmp = []
+        for j in range(len(samples_validation)):
+            theta = torch.Tensor(samples_validation[j][0:INPUT_DIM_CS])
+            dv_emu = emu.predict(theta)[0]
+            tmp.append(dv_emu)
+        tmp = np.array(tmp)
+    elif i==1:
+        print("using emulator of 2x2 part")
+        emu.load('projects/lsst_y1/emulator_output_3x2/models/model_1')
+        print('emulator loaded 2x2pt')
+        tmp = []
+        for j in range(len(samples_validation)):
+            theta = torch.Tensor(samples_validation[j])
+            dv_emu = emu.predict(theta)[0]
+            tmp.append(dv_emu)
+        tmp = np.array(tmp)
 
-        theta = torch.Tensor(samples_validation[j])
-        dv_emu = emu.predict(theta)[0]
-
-
-        tmp.append(dv_emu)
-    tmp = np.array(tmp)
 
     if i==0:
         dv_predict = tmp

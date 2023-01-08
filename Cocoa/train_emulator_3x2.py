@@ -16,6 +16,10 @@ config = Config(configfile)
 train_samples_files = sys.argv[2]
 file = sys.argv[2]
 
+##3x2 setting; separate cosmic shear and 2x2pt
+BIN_SIZE   = 780 # number of angular bins in each z-bin
+BIN_NUMBER = 2 # number of z-bins
+
 ### CONCATENATE TRAINING DATA
 #train_samples = []
 #train_data_vectors = []
@@ -50,10 +54,11 @@ if config.probe=='cosmic_shear':
     dv_std = config.dv_std[0:OUTPUT_DIM]
 elif config.probe=='3x2pt':
     print("trianing for 3x2pt")
+    OUTPUT_DIM = 1560
     train_data_vectors = train_data_vectors
     cov     = config.cov
     cov_inv = np.linalg.inv(config.cov) #NO mask here for cov_inv enters training
-    OUTPUT_DIM = config.output_dim #config will do it automatically, check config.py
+    OUTPUT_DIM = config.output_dims #config will do it automatically, check config.py
     dv_fid =config.dv_fid
     dv_std = config.dv_std
 else:
@@ -108,8 +113,8 @@ if len(sys.argv) > 3:
 print("Total samples enter the training: ", len(train_samples))
 
 ###============= Setting up validation set ============
-validation_samples =      np.load('./projects/lsst_y1/emulator_output/emu_validation/lhs/dvs_for_validation/validation_samples.npy')
-validation_data_vectors = np.load('./projects/lsst_y1/emulator_output/emu_validation/lhs/dvs_for_validation/validation_data_vectors.npy')[:,:OUTPUT_DIM]
+validation_samples =      np.load('./projects/lsst_y1/emulator_output_3x2/emu_validation/lhs/dvs_5k/validation_samples.npy')
+validation_data_vectors = np.load('./projects/lsst_y1/emulator_output_3x2/emu_validation/lhs/dvs_5k/validation_data_vectors.npy')[:,:OUTPUT_DIM]
 
 ###============= Normalize the data vectors for training; 
 ###============= used to be based on dv_max; but change to eigen-basis is better##
@@ -140,24 +145,48 @@ else:
     torch.set_num_threads(60) # Intra-op parallelism
 
 print('Using device: ',device)
-    
-TS = torch.Tensor(train_samples)
-#TS.to(device)
-TDV = torch.Tensor(train_data_vectors)
-#TDV.to(device)
-VS = torch.Tensor(validation_samples)
-#VS.to(device)
-VDV = torch.Tensor(validation_data_vectors)
-#VDV.to(device)
 
-print("training with the following hyper paraters: batch_size = ", config.batch_size, 'n_epochs = ', config.n_epochs)
-emu = NNEmulator(config.n_dim, OUTPUT_DIM, 
-                        dv_fid, dv_std, cov, dv_max,
-                        device)
-emu.train(TS, TDV, VS, VDV, batch_size=config.batch_size, n_epochs=config.n_epochs)
-print("model saved to ",str(config.savedir))
-emu.save(config.savedir + '/model_1')
-##KZ: 12/31/2022: The bin-by-bin version of this file was accidentally deleted. should be able to get back with the convention in plot_validation
+for i in range(BIN_NUMBER):
+    i=1
+    i=0
+    print("training bin", i)
+    print("testing")
+    train_samples = train_samples[:,0:13]
+    validation_samples = validation_samples[:,0:13]
+
+    start_idx = i*BIN_SIZE
+    end_idx   = start_idx + BIN_SIZE
+
+
+    train_data_vectors      = train_data_vectors[:,start_idx:end_idx]
+    validation_data_vectors = validation_data_vectors[:,start_idx:end_idx]
+    OUTPUT_DIM              = end_idx - start_idx
+    cov                     = cov[start_idx:end_idx, start_idx:end_idx]
+    dv_fid                  = dv_fid[start_idx:end_idx]
+    dv_std                  = dv_std[start_idx:end_idx]
+    dv_max                  = dv_max[start_idx:end_idx]
+
+    TS = torch.Tensor(train_samples)
+    #TS.to(device)
+    TDV = torch.Tensor(train_data_vectors)
+    #TDV.to(device)
+    VS = torch.Tensor(validation_samples)
+    #VS.to(device)
+    VDV = torch.Tensor(validation_data_vectors)
+    #VDV.to(device)
+
+    print("training with the following hyper paraters: batch_size = ", config.batch_size, 'n_epochs = ', config.n_epochs)
+    print("Emulator Input Dim =  ", config.n_dim, 'output_dim = ', len(dv_fid))
+
+    # emu = NNEmulator(config.n_dim, OUTPUT_DIM, 
+    #             dv_fid, dv_std, cov, dv_max,
+    #             device)
+    emu = NNEmulator(13, OUTPUT_DIM, 
+            dv_fid, dv_std, cov, dv_max,
+            device)
+    emu.train(TS, TDV, VS, VDV, batch_size=config.batch_size, n_epochs=config.n_epochs)
+    print("model saved to ",str(config.savedir))
+    emu.save(config.savedir + '/model_1')
 
 
 print("DONE!!")   

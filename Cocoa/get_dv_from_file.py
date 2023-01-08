@@ -91,7 +91,7 @@ def get_data_vectors(params_list, comm, rank):
     return train_params, train_data_vectors
 
 
-print("Calculating data vectors from posterior")
+
 
 if(rank==0):
     posterior_params = get_samples_from_posterior(samplefile)
@@ -103,11 +103,11 @@ posterior_params = comm.bcast(posterior_params, root=0)
 try:
     params_list = get_params_list(posterior_params, config.param_labels)
 except:
-    print("something wrong with input, it should be a .npy file generated with 'get_samples_from_posterior.py', where you do burn-in and thinning ")
+    print("something wrong with input, it should be a .npy file generated with 'get_samples_from_posterior.py' or 'get_samples_lhs.py', where you do burn-in and thinning ")
     print("what we get is: ", np.shape(posterior_params))
     quit()
 
-            
+print("Calculating data vectors from posterior")            
 train_samples, train_data_vectors = get_data_vectors(params_list, comm, rank)    
     
 
@@ -121,8 +121,8 @@ if(rank==0):
     except FileExistsError:
         pass
     if(config.save_train_data):
-        np.save(config.savedir + '/train_post_data_vectors.npy', train_data_vectors)
-        np.save(config.savedir + '/train_post_samples.npy', train_samples)
+        np.save(config.savedir + '/filename2_data_vectors.npy', train_data_vectors)
+        np.save(config.savedir + '/filename2_samples.npy', train_samples)
 
 print("DONE") 
 MPI.Finalize

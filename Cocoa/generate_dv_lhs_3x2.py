@@ -52,12 +52,12 @@ def get_local_data_vector_list(params_list, rank):
 def get_data_vectors(params_list, comm, rank):
     local_params_list, local_data_vector_list = get_local_data_vector_list(params_list, rank)
 
-    ## for some weird reason, this Barrier() makes it SUPER slow, maybe some node is off
-    # if rank==0:
-    #     print("rank 0 done, waiting other tasks")
-    # comm.Barrier()
-    # if rank==0:
-    #     print("Every task is done, gathering")
+    #for some weird reason, this Barrier() makes it SUPER slow, maybe some node is off
+    if rank==0:
+        print("rank 0 done, waiting other tasks")
+    comm.Barrier()
+    if rank==0:
+        print("Every task is done, gathering")
     if rank!=0:
         comm.send([local_params_list, local_data_vector_list], dest=0)
         train_params       = None
@@ -80,6 +80,7 @@ print("generating datavectors from LHS")
 
 if(rank==0):
     lhs_params = get_lhs_samples(config.n_dim, config.n_lhs, config.lhs_minmax)
+    print("dim of parameter space for training:", config.n_dim)
 else:
     lhs_params = None
 
@@ -103,6 +104,6 @@ if(rank==0):
         np.save(config.savedir + '/train_post_data_vectors.npy', train_data_vectors)
         np.save(config.savedir + '/train_post_samples.npy', train_samples)
 
-    print("DONE") 
+print("DONE") 
 MPI.Finalize
 
