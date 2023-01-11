@@ -108,8 +108,8 @@ if len(sys.argv) > 3:
 print("Total samples enter the training: ", len(train_samples))
 
 ###============= Setting up validation set ============
-validation_samples =      np.load('./projects/lsst_y1/emulator_output/emu_validation/lhs/dvs_for_validation/validation_samples.npy')
-validation_data_vectors = np.load('./projects/lsst_y1/emulator_output/emu_validation/lhs/dvs_for_validation/validation_data_vectors.npy')[:,:OUTPUT_DIM]
+validation_samples =      np.load('./projects/lsst_y1/emulator_output_wcdm/emu_validation/lhs/dvs_for_validation/validation_samples.npy')
+validation_data_vectors = np.load('./projects/lsst_y1/emulator_output_wcdm/emu_validation/lhs/dvs_for_validation/validation_data_vectors.npy')[:,:OUTPUT_DIM]
 
 ###============= Normalize the data vectors for training; 
 ###============= used to be based on dv_max; but change to eigen-basis is better##
@@ -136,8 +136,8 @@ if torch.cuda.is_available():
     device = 'cuda'
 else:
     device = 'cpu'
-    torch.set_num_interop_threads(60) # Inter-op parallelism
-    torch.set_num_threads(60) # Intra-op parallelism
+    torch.set_num_interop_threads(30) # Inter-op parallelism
+    torch.set_num_threads(30) # Intra-op parallelism
 
 print('Using device: ',device)
     
@@ -153,7 +153,7 @@ VDV = torch.Tensor(validation_data_vectors)
 print("training with the following hyper paraters: batch_size = ", config.batch_size, 'n_epochs = ', config.n_epochs)
 emu = NNEmulator(config.n_dim, OUTPUT_DIM, 
                         dv_fid, dv_std, cov, dv_max,
-                        device, model='simply_connected') #resnet_small as default
+                        device)
 emu.train(TS, TDV, VS, VDV, batch_size=config.batch_size, n_epochs=config.n_epochs)
 print("model saved to ",str(config.savedir))
 emu.save(config.savedir + '/model_1')

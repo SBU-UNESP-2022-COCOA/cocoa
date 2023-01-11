@@ -11,6 +11,8 @@ from cocoa_emu.sampling import EmuSampler
 
 torch.set_default_dtype(torch.double)
 
+model_path = 'projects/lsst_y1/emulator_output_wcdm/models/model_'
+
 OUTPUT_DIM = 780
 BIN_SIZE   = 26 # number of angular bins in each z-bin
 BIN_NUMBER = 30 # number of z-bins
@@ -53,8 +55,8 @@ config = Config(configfile)
 # dv_validation      = np.load('projects/lsst_y1/emulator_output/emu_validation/noshift_withCMB' + '/validation_data_vectors.npy')
 
 
-samples_validation = np.load('./projects/lsst_y1/emulator_output/emu_validation/lhs/dvs_for_validation/validation_samples.npy')
-dv_validation      = np.load('./projects/lsst_y1/emulator_output/emu_validation/lhs/dvs_for_validation/validation_data_vectors.npy')
+samples_validation = np.load('./projects/lsst_y1/emulator_output_wcdm/emu_validation/lhs/dvs_for_validation/validation_samples.npy')
+dv_validation      = np.load('./projects/lsst_y1/emulator_output_wcdm/emu_validation/lhs/dvs_for_validation/validation_data_vectors.npy')
 
 # samples_validation = np.load('./projects/lsst_y1/emulator_output/post/noshift_100k/train_post_samples.npy')
 # dv_validation      = np.load('./projects/lsst_y1/emulator_output/post/noshift_100k/train_post_data_vectors.npy')
@@ -74,17 +76,21 @@ cov_inv_masked = np.linalg.inv(config.cov[0:OUTPUT_DIM, 0:OUTPUT_DIM][mask][:,ma
 
 #print(samples_validation[1])
 
+#Note: the following order is not the same in LCDM and wCDM
 logA = samples_validation[:,0]
 ns = samples_validation[:,1]
 H0 = samples_validation[:,2]
 Omegab = samples_validation[:,3]
 Omegam = samples_validation[:,4]
-Omegam_growth = samples_validation[:,5]
-dz1 = samples_validation[:,6]
-dz2 = samples_validation[:,7]
-dz3 = samples_validation[:,8]
-dz4 = samples_validation[:,9]
-dz5 = samples_validation[:,10]
+wgeo   = samples_validation[:,5]
+wgrowth= samples_validation[:,6] 
+
+Omegam_growth = samples_validation[:,7]
+dz1 = samples_validation[:,8]
+dz2 = samples_validation[:,9]
+dz3 = samples_validation[:,10]
+dz4 = samples_validation[:,11]
+dz5 = samples_validation[:,12]
 
 #####Set Range####
 print("setting ranges of validation plot")
@@ -158,7 +164,9 @@ dv_validation      = np.delete(dv_validation, rows_to_delete , 0)
 logA = samples_validation[:,0]
 ns = samples_validation[:,1]
 Omegam = samples_validation[:,4]
-Omegam_growth = samples_validation[:,5]
+wgeo = samples_validation[:,5]
+wgrowth = samples_validation[:,6]
+Omegam_growth = samples_validation[:,7]
 
 ######
 
@@ -178,7 +186,7 @@ end_idx   = 0
 for i in range(BIN_NUMBER):
     device='cpu'
     emu = NNEmulator(config.n_dim, BIN_SIZE, config.dv_fid, config.dv_std, cov, config.dv_fid, device) #should privde dv_max instead of dv_fid, but emu.load will make it correct
-    emu.load('projects/lsst_y1/emulator_output/models/model_' + str(i+1))
+    emu.load(model_path + str(i+1))
     print('emulator loaded', i+1)
     tmp = []
     for j in range(len(samples_validation)):
@@ -232,30 +240,28 @@ plt.hist(chi2_list, num_bins,
                             alpha = 0.7)
 
 
-plt.savefig("validation_chi2.pdf")
+plt.savefig("validation_chi2_wcdm.pdf")
 
 ####PLOT chi2 end
 
 #####PLOT 2d start######
 plt.figure().clear()
 
-#plt.scatter(logA, Omegam, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap)
-plt.scatter(logA, Omegam, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap,norm=matplotlib.colors.LogNorm())
-#plt.scatter(Omegam, Omegam_growth, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap,norm=matplotlib.colors.LogNorm())
-#plt.scatter(Omegam, Omegam_growth, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap)
-#plt.scatter(logA, Omegam_growth, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap,norm=matplotlib.colors.LogNorm())
-#plt.scatter(H0, Omegab, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap,norm=matplotlib.colors.LogNorm())
+
+plt.scatter(Omegam, wgeo, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap,norm=matplotlib.colors.LogNorm())
+plt.xlabel(r'$\Omega_m^{\rm geo}$')
+plt.ylabel(r'$w^{\rm geo}$')
+
+# plt.scatter(wgeo, wgrowth, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap,norm=matplotlib.colors.LogNorm())
+# plt.xlabel(r'$w^{\rm geo}$')
+# plt.ylabel(r'$w^{\rm growth}$')
+
+
 
 cb = plt.colorbar()
 
-plt.xlabel(r'$\log A$')
-plt.ylabel(r'$\Omega_m$')
-
-#plt.xlabel(r'$\Omega_m$')
-#plt.ylabel(r'$\Omega_m^{\rm growth}$')
-
 plt.legend()
-plt.savefig("validation.pdf")
+plt.savefig("validation_wcdm.pdf")
 
 #####PLOT 2d end######
 
