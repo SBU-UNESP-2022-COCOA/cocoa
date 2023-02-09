@@ -1,6 +1,7 @@
 import sys,os
 from mpi4py import MPI
 import numpy as np
+import pynolh
 
 sys.path.insert(0, os.path.abspath(".."))
 
@@ -21,11 +22,11 @@ config = Config(configfile)
 from pyDOE import lhs
 
 def get_lhs_samples(N_dim, N_lhs, lhs_minmax):
-    unit_lhs_samples = lhs(N_dim, N_lhs)
+    unit_lhs_samples = lhs(N_dim, N_lhs, criterion='center')
     lhs_params = get_lhs_params_list(unit_lhs_samples, lhs_minmax)
     return lhs_params
 
-n_split = 3
+n_split = 1
 
 
 #get full list
@@ -49,6 +50,7 @@ for i in range(n_split):
         end_idx = np.size(lhs_params) - 1
     print("start_idx, end_idx = ", start_idx, end_idx)
     np.save(config.savedir + '/train_' + str(i+1) + '_samples.npy', lhs_params[start_idx:end_idx])
+    print("saved to: ", config.savedir + '/train_' + str(i+1) + '_samples.npy')
 
 
 

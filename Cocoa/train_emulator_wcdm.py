@@ -43,7 +43,7 @@ if config.probe=='cosmic_shear':
     OUTPUT_DIM = 780
     train_data_vectors = train_data_vectors[:,:OUTPUT_DIM]
     cov     = config.cov[0:OUTPUT_DIM, 0:OUTPUT_DIM]
-    cov_inv = np.linalg.inv(config.cov)[0:OUTPUT_DIM, 0:OUTPUT_DIM] #NO mask here for cov_inv enters training
+    cov_inv = np.linalg.inv(cov)#NO mask here for cov_inv enters training
     mask_cs = config.mask[0:OUTPUT_DIM]
     
     dv_fid =config.dv_fid[0:OUTPUT_DIM]
@@ -53,9 +53,12 @@ elif config.probe=='3x2pt':
     train_data_vectors = train_data_vectors
     cov     = config.cov
     cov_inv = np.linalg.inv(config.cov) #NO mask here for cov_inv enters training
-    OUTPUT_DIM = config.output_dim #config will do it automatically, check config.py
+    OUTPUT_DIM = config.output_dims #config will do it automatically, check config.py
     dv_fid =config.dv_fid
     dv_std = config.dv_std
+elif config.probe=='2x2pt':
+    print('probe not defnied')
+    quit()
 else:
     print('probe not defnied')
     quit()
@@ -108,22 +111,28 @@ if len(sys.argv) > 3:
 print("Total samples enter the training: ", len(train_samples))
 
 ###============= Setting up validation set ============
+print("loading LSST validation set")
 validation_samples =      np.load('./projects/lsst_y1/emulator_output_wcdm/emu_validation/lhs/dvs_for_validation/validation_samples.npy')
 validation_data_vectors = np.load('./projects/lsst_y1/emulator_output_wcdm/emu_validation/lhs/dvs_for_validation/validation_data_vectors.npy')[:,:OUTPUT_DIM]
+
+# print("loading DES validation set")
+# validation_samples =      np.load('./projects/des_y3/emulator_output_cs_wcdm/lhs/dvs_for_validation_50k/validation_samples.npy')
+# validation_data_vectors = np.load('./projects/des_y3/emulator_output_cs_wcdm/lhs/dvs_for_validation_50k/validation_data_vectors.npy')[:,:OUTPUT_DIM]
 
 ###============= Normalize the data vectors for training; 
 ###============= used to be based on dv_max; but change to eigen-basis is better##
 dv_max = np.abs(train_data_vectors).max(axis=0)
+dv_mean = np.mean(train_data_vectors, axis=0)
 
 cov = config.cov[0:OUTPUT_DIM,0:OUTPUT_DIM] #np.loadtxt('lsst_y1_cov.txt')
 # do diagonalization C = QLQ^(T); Q is now change of basis matrix
-eigensys = np.linalg.eig(cov)
+eigensys = np.linalg.eigh(cov)
 evals = eigensys[0]
 evecs = eigensys[1]
 #change of basis
-tmp = np.array([dv_fid for _ in range(len(train_data_vectors))])
+tmp = np.array([dv_mean for _ in range(len(train_data_vectors))])
 train_data_vectors = np.transpose((np.linalg.inv(evecs) @ np.transpose(train_data_vectors - tmp)))#[pc_idxs])
-tmp = np.array([dv_fid for _ in range(len(validation_data_vectors))])
+tmp = np.array([dv_mean for _ in range(len(validation_data_vectors))])
 validation_data_vectors = np.transpose((np.linalg.inv(evecs) @ np.transpose(validation_data_vectors - tmp)))#[pc_idxs])
 
 #====================chi2 cut for test dvs===========================
@@ -152,8 +161,8 @@ VDV = torch.Tensor(validation_data_vectors)
 
 print("training with the following hyper paraters: batch_size = ", config.batch_size, 'n_epochs = ', config.n_epochs)
 emu = NNEmulator(config.n_dim, OUTPUT_DIM, 
-                        dv_fid, dv_std, cov, dv_max,
-                        device)
+                        dv_fid, dv_std, cov, dv_max, dv_mean,
+                        device, model='resnet_small_DES')
 emu.train(TS, TDV, VS, VDV, batch_size=config.batch_size, n_epochs=config.n_epochs)
 print("model saved to ",str(config.savedir))
 emu.save(config.savedir + '/model_1')

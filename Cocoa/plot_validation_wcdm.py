@@ -38,6 +38,7 @@ BIN_NUMBER = 1 # number of z-bins
 def get_chi2(dv_predict, dv_exact, mask, cov_inv):
 
     ## GPU emulators works well with float32
+
     delta_dv = (dv_predict - np.float32(dv_exact) )[mask]
     chi2 = np.matmul( np.matmul(np.transpose(delta_dv), np.float32(cov_inv)) , delta_dv  )   
     return chi2
@@ -45,7 +46,7 @@ def get_chi2(dv_predict, dv_exact, mask, cov_inv):
 
 os.environ["OMP_NUM_THREADS"] = "1"
 
-configfile = './projects/lsst_y1/train_emulator.yaml'
+configfile = './projects/lsst_y1/train_emulator_wcdm.yaml'
 config = Config(configfile)
 
 # samples_validation = np.load('projects/lsst_y1/emulator_output/emu_validation/noshift' + '/validation_samples.npy')
@@ -61,7 +62,7 @@ dv_validation      = np.load('./projects/lsst_y1/emulator_output_wcdm/emu_valida
 # samples_validation = np.load('./projects/lsst_y1/emulator_output/post/noshift_100k/train_post_samples.npy')
 # dv_validation      = np.load('./projects/lsst_y1/emulator_output/post/noshift_100k/train_post_data_vectors.npy')
 
-
+print(np.shape(dv_validation), dv_validation[-1][779:781])
 
 if config.probe =='cosmic_shear':
     dv_validation = dv_validation[:,:OUTPUT_DIM]
@@ -91,13 +92,15 @@ dz2 = samples_validation[:,9]
 dz3 = samples_validation[:,10]
 dz4 = samples_validation[:,11]
 dz5 = samples_validation[:,12]
+IA_1 = samples_validation[:,13]
+IA_2 = samples_validation[:,14]
 
 #####Set Range####
 print("setting ranges of validation plot")
 rows_to_delete = []
 
 ## rg = range to be taken from the boundary, eg. rg=0.1 means 80% of EE box
-rg = 0.05
+rg = 0.00
 logA_max = np.log(25) - rg*(np.log(25)-np.log(17))
 logA_min = np.log(17) + rg*(np.log(25)-np.log(17))
 omm_max  = 0.4  - rg*(0.4-0.24)
@@ -184,18 +187,17 @@ end_idx   = 0
 #It's more intuitive to take one sample at a time, but that would require too many loading of the emulator
 #The loop below is to get dv_predict of ALL samples, bin by bin.
 for i in range(BIN_NUMBER):
-    device='cpu'
-    emu = NNEmulator(config.n_dim, BIN_SIZE, config.dv_fid, config.dv_std, cov, config.dv_fid, device) #should privde dv_max instead of dv_fid, but emu.load will make it correct
-    emu.load(model_path + str(i+1))
+    device='cuda'
+    emu = NNEmulator(config.n_dim, BIN_SIZE, config.dv_fid, config.dv_std, cov, config.dv_fid, config.dv_fid, device) #should privde dv_max instead of dv_fid, but emu.load will make it correct
+    emu.load(model_path + str(i+1), map_location=torch.device('cuda'))
     print('emulator loaded', i+1)
     tmp = []
     for j in range(len(samples_validation)):
 
         theta = torch.Tensor(samples_validation[j])
-        dv_emu = emu.predict(theta)[0]
-
-
-        tmp.append(dv_emu)
+        #dv_emu = emu.predict(theta)[0] #move to next line for faster speed
+        tmp.append(emu.predict(theta)[0])
+        
     tmp = np.array(tmp)
 
     if i==0:
@@ -248,14 +250,17 @@ plt.savefig("validation_chi2_wcdm.pdf")
 plt.figure().clear()
 
 
-plt.scatter(Omegam, wgeo, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap,norm=matplotlib.colors.LogNorm())
-plt.xlabel(r'$\Omega_m^{\rm geo}$')
-plt.ylabel(r'$w^{\rm geo}$')
+# plt.scatter(Omegam, wgeo, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap,norm=matplotlib.colors.LogNorm())
+# plt.xlabel(r'$\Omega_m^{\rm geo}$')
+# plt.ylabel(r'$w^{\rm geo}$')
 
 # plt.scatter(wgeo, wgrowth, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap,norm=matplotlib.colors.LogNorm())
 # plt.xlabel(r'$w^{\rm geo}$')
 # plt.ylabel(r'$w^{\rm growth}$')
 
+plt.scatter(IA_1, IA_2, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap,norm=matplotlib.colors.LogNorm())
+plt.xlabel(r'IA1')
+plt.ylabel(r'IA2')
 
 
 cb = plt.colorbar()

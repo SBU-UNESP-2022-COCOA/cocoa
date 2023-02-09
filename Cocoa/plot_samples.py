@@ -6,8 +6,11 @@ from scipy.stats import gaussian_kde
 from mpl_toolkits.mplot3d import axes3d   
 
 
-samples_1 = np.load('projects/lsst_y1/emulator_output/post/noshift_200k/train_post_samples.npy',allow_pickle=True)
-samples_2 = np.load('projects/lsst_y1/emulator_validation/train_validation_samples.npy',allow_pickle=True)
+#samples_1 = np.load('projects/lsst_y1/emulator_output/post/noshift_200k/train_post_samples.npy',allow_pickle=True)
+#samples_2 = np.load('projects/lsst_y1/emulator_validation/train_validation_samples.npy',allow_pickle=True)
+
+samples_1 = np.load('projects/des_y3/emulator_output_cs_wcdm_NLA/lhs/dvs_for_validation_2000k/train_samples.npy',allow_pickle=True)
+samples_2 = np.load('projects/des_y3/emulator_output_cs_wcdm_NLA/lhs/dvs_for_validation_10k/validation_samples.npy',allow_pickle=True)
 
 #samples_1 = np.load('projects/lsst_y1/emulator_output/lhs/dvs_for_training_800k/lhs_800k_samples.npy',allow_pickle=True) #LHS
 #samples_2 = np.load('projects/lsst_y1/emulator_output/lhs/dvs_for_training_30k/train_30k_samples.npy')
@@ -16,34 +19,37 @@ samples_2 = np.load('projects/lsst_y1/emulator_validation/train_validation_sampl
 # Omegam_0 = samples_0[:,4]
 # Omegam_growth_0 = samples_0[:,5]
 
+print(samples_1[0])
+print(samples_2[0])
+
 logA_1 = samples_1[:,0]
 H0_1 = samples_1[:,2]
 Omegab_1 = samples_1[:,3]
 Omegam_1 = samples_1[:,4]
 Omegam_growth_1 = samples_1[:,5]
-testp1_1 = samples_1[:,4]
-testp2_1 = samples_1[:,5]
+testp1_1 = samples_1[:,12]
+testp2_1 = samples_1[:,13]
 
 logA_2 = samples_2[:,0]
 H0_2 = samples_2[:,2]
 Omegab_2 = samples_2[:,3]
 Omegam_2 = samples_2[:,4]
 Omegam_growth_2 = samples_2[:,5]
-testp1_2 = samples_2[:,4]
-testp2_2 = samples_2[:,5]
+testp1_2 = samples_2[:,12]
+testp2_2 = samples_2[:,13]
 
 
 # x0 = logA_0
 # y0 = Omegam_0
 # z0 = Omegam_growth_0
 
-x1 = logA_1
-y1 = Omegam_1
-z1 = Omegam_growth_1
+# x1 = logA_1
+# y1 = Omegam_1
+# z1 = Omegam_growth_1
 
-x2 = logA_2
-y2 = Omegam_2
-z2 = Omegam_growth_2
+# x2 = logA_2
+# y2 = Omegam_2
+# z2 = Omegam_growth_2
 
 x1 = testp1_1
 y1 = testp2_1

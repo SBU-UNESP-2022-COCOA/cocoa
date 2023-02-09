@@ -175,10 +175,12 @@ end_idx   = 0
 #Loop over the models glue them together
 #It's more intuitive to take one sample at a time, but that would require too many loading of the emulator
 #The loop below is to get dv_predict of ALL samples, bin by bin.
+
 for i in range(BIN_NUMBER):
     device='cpu'
-    emu = NNEmulator(config.n_dim, BIN_SIZE, config.dv_fid, config.dv_std, cov, config.dv_fid, device) #should privde dv_max instead of dv_fid, but emu.load will make it correct
-    emu.load('projects/lsst_y1/emulator_output/models/model_' + str(i+1))
+    emu = NNEmulator(config.n_dim, BIN_SIZE, config.dv_fid, config.dv_std, cov, config.dv_fid, config.dv_fid, device) #should privde dv_max instead of dv_fid, but emu.load will make it correct
+    emu.load('projects/lsst_y1/emulator_output/models/800k_lhs_only/model_' + str(i+1), map_location=torch.device('cpu'))
+    emu.load('projects/lsst_y1/emulator_output/models/model_' + str(i+1), map_location=torch.device('cpu'))
     print('emulator loaded', i+1)
     tmp = []
     for j in range(len(samples_validation)):
@@ -194,6 +196,8 @@ for i in range(BIN_NUMBER):
         dv_predict = tmp
     else:
         dv_predict = np.append(dv_predict, tmp, axis = 1)
+
+
 
 
 print("testing", np.shape(dv_predict))

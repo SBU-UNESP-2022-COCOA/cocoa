@@ -128,8 +128,10 @@ class Config:
                 if('dist' in prior):
                     loc   = prior['loc']
                     scale = prior['scale']
-                    lh_min = loc - 4. * scale
-                    lh_max = loc + 4. * scale
+                    # lh_min = loc - 4. * scale
+                    # lh_max = loc + 4. * scale
+                    lh_min = loc - 3.33333 * scale #this gives +/- 3-sigma after removing 10% of the boundary
+                    lh_max = loc + 3.33333 * scale
                 else:
                     lh_min = prior['min']
                     lh_max = prior['max']

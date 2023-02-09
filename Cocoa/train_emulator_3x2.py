@@ -47,7 +47,7 @@ if config.probe=='cosmic_shear':
     OUTPUT_DIM = 780
     train_data_vectors = train_data_vectors[:,:OUTPUT_DIM]
     cov     = config.cov[0:OUTPUT_DIM, 0:OUTPUT_DIM]
-    cov_inv = np.linalg.inv(config.cov)[0:OUTPUT_DIM, 0:OUTPUT_DIM] #NO mask here for cov_inv enters training
+    cov_inv = np.linalg.inv(cov) #NO mask here for cov_inv enters training
     mask_cs = config.mask[0:OUTPUT_DIM]
     
     dv_fid =config.dv_fid[0:OUTPUT_DIM]
@@ -122,7 +122,7 @@ dv_max = np.abs(train_data_vectors).max(axis=0)
 
 cov = config.cov[0:OUTPUT_DIM,0:OUTPUT_DIM] #np.loadtxt('lsst_y1_cov.txt')
 # do diagonalization C = QLQ^(T); Q is now change of basis matrix
-eigensys = np.linalg.eig(cov)
+eigensys = np.linalg.eigh(cov)
 evals = eigensys[0]
 evecs = eigensys[1]
 #change of basis
@@ -147,16 +147,19 @@ else:
 print('Using device: ',device)
 
 for i in range(BIN_NUMBER):
-    i=1
-    i=0
-    print("training bin", i)
-    print("testing")
-    train_samples = train_samples[:,0:13]
-    validation_samples = validation_samples[:,0:13]
+    i=1 #2x2
+    #i=0 #cosmic shear, not working, no idea why
 
     start_idx = i*BIN_SIZE
     end_idx   = start_idx + BIN_SIZE
 
+    if i==0:
+        print("training cosmic shear part")
+    elif i==1:
+        print("training 2x2pt part")
+    else:
+        print("other training not supported yet")
+        quit()
 
     train_data_vectors      = train_data_vectors[:,start_idx:end_idx]
     validation_data_vectors = validation_data_vectors[:,start_idx:end_idx]
@@ -178,12 +181,12 @@ for i in range(BIN_NUMBER):
     print("training with the following hyper paraters: batch_size = ", config.batch_size, 'n_epochs = ', config.n_epochs)
     print("Emulator Input Dim =  ", config.n_dim, 'output_dim = ', len(dv_fid))
 
-    # emu = NNEmulator(config.n_dim, OUTPUT_DIM, 
-    #             dv_fid, dv_std, cov, dv_max,
-    #             device)
-    emu = NNEmulator(13, OUTPUT_DIM, 
-            dv_fid, dv_std, cov, dv_max,
-            device)
+    emu = NNEmulator(config.n_dim, OUTPUT_DIM, 
+                dv_fid, dv_std, cov, dv_max,
+                device)
+    # emu = NNEmulator(13, OUTPUT_DIM, 
+    #         dv_fid, dv_std, cov, dv_max,
+    #         device)
     emu.train(TS, TDV, VS, VDV, batch_size=config.batch_size, n_epochs=config.n_epochs)
     print("model saved to ",str(config.savedir))
     emu.save(config.savedir + '/model_1')

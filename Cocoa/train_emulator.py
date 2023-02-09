@@ -43,7 +43,7 @@ if config.probe=='cosmic_shear':
     OUTPUT_DIM = 780
     train_data_vectors = train_data_vectors[:,:OUTPUT_DIM]
     cov     = config.cov[0:OUTPUT_DIM, 0:OUTPUT_DIM]
-    cov_inv = np.linalg.inv(config.cov)[0:OUTPUT_DIM, 0:OUTPUT_DIM] #NO mask here for cov_inv enters training
+    cov_inv = np.linalg.inv(cov)#NO mask here for cov_inv enters training
     mask_cs = config.mask[0:OUTPUT_DIM]
     
     dv_fid =config.dv_fid[0:OUTPUT_DIM]
@@ -111,9 +111,14 @@ print("Total samples enter the training: ", len(train_samples))
 validation_samples =      np.load('./projects/lsst_y1/emulator_output/emu_validation/lhs/dvs_for_validation/validation_samples.npy')
 validation_data_vectors = np.load('./projects/lsst_y1/emulator_output/emu_validation/lhs/dvs_for_validation/validation_data_vectors.npy')[:,:OUTPUT_DIM]
 
+#DES
+#validation_samples =      np.load('./projects/des_y3/emulator_output/emu_validation/lhs/50k/validation_samples.npy')
+#validation_data_vectors = np.load('./projects/des_y3/emulator_output/emu_validation/lhs/50k/validation_data_vectors.npy')[:,:OUTPUT_DIM]
+
 ###============= Normalize the data vectors for training; 
 ###============= used to be based on dv_max; but change to eigen-basis is better##
 dv_max = np.abs(train_data_vectors).max(axis=0)
+dv_mean = np.mean(train_data_vectors, axis=0)
 
 cov = config.cov[0:OUTPUT_DIM,0:OUTPUT_DIM] #np.loadtxt('lsst_y1_cov.txt')
 # do diagonalization C = QLQ^(T); Q is now change of basis matrix
@@ -141,6 +146,7 @@ else:
 
 print('Using device: ',device)
     
+
 TS = torch.Tensor(train_samples)
 #TS.to(device)
 TDV = torch.Tensor(train_data_vectors)
@@ -151,9 +157,10 @@ VDV = torch.Tensor(validation_data_vectors)
 #VDV.to(device)
 
 print("training with the following hyper paraters: batch_size = ", config.batch_size, 'n_epochs = ', config.n_epochs)
+print("emulator info. INPUT_DIM = ", config.n_dim, "OUTPUT_DIM  = ", OUTPUT_DIM )
 emu = NNEmulator(config.n_dim, OUTPUT_DIM, 
-                        dv_fid, dv_std, cov, dv_max,
-                        device, model='simply_connected') #resnet_small as default
+                        dv_fid, dv_std, cov, dv_max, dv_mean,
+                        device, model='resnet_small') #resnet_small as default
 emu.train(TS, TDV, VS, VDV, batch_size=config.batch_size, n_epochs=config.n_epochs)
 print("model saved to ",str(config.savedir))
 emu.save(config.savedir + '/model_1')

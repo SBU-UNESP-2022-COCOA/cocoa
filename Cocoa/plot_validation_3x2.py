@@ -204,11 +204,11 @@ end_idx   = 0
 
 print("validating 3x2pt with seperating cosmic shear and 2x2")
 for i in range(2):
-    device='cuda'
+    device='cpu'
     emu = NNEmulator(config.n_dim, BIN_SIZE, config.dv_fid, config.dv_std, cov, config.dv_fid, device) #should privde dv_max instead of dv_fid, but emu.load will make it correct
     if i ==0:
         print("using emulator of cosmic shear part")
-        emu.load('projects/lsst_y1/emulator_output/models/model_1')
+        emu.load('projects/lsst_y1/emulator_output/models/model_1', map_location=torch.device('cpu'))
         print('emulator loaded cosmic shear')
         tmp = []
         for j in range(len(samples_validation)):
@@ -218,7 +218,7 @@ for i in range(2):
         tmp = np.array(tmp)
     elif i==1:
         print("using emulator of 2x2 part")
-        emu.load('projects/lsst_y1/emulator_output_3x2/models/model_1')
+        emu.load('projects/lsst_y1/emulator_output_3x2/models/2x2_800k/model_1', map_location=torch.device('cpu'))
         print('emulator loaded 2x2pt')
         tmp = []
         for j in range(len(samples_validation)):
@@ -293,7 +293,7 @@ plt.ylabel(r'$\Omega_m$')
 #plt.ylabel(r'$\Omega_m^{\rm growth}$')
 
 plt.legend()
-plt.savefig("validation.pdf")
+plt.savefig("validation_3x2.pdf")
 
 #####PLOT 2d end######
 
