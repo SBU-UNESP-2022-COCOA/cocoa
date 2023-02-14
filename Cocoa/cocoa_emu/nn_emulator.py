@@ -7,6 +7,7 @@ import numpy as np
 import h5py as h5
 from torchvision import models
 from torchinfo import summary
+from .utils import *
 
 
 class Affine(nn.Module):
@@ -114,7 +115,7 @@ class ResBottle(nn.Module):
 
 
 class NNEmulator:
-    def __init__(self, N_DIM, OUTPUT_DIM, dv_fid, dv_std, cov, dv_max, dv_mean, device, model='resnet_small_DES', optim=None):
+    def __init__(self, N_DIM, OUTPUT_DIM, dv_fid, dv_std, cov, dv_max, dv_mean, lhs_minmax, device, model='resnet_small_DES', optim=None):
 
         torch.set_default_dtype(torch.float64)
         self.N_DIM = N_DIM
@@ -129,7 +130,10 @@ class NNEmulator:
         self.cov        = torch.Tensor(cov)
         self.cov_inv    = torch.Tensor(np.linalg.inv(cov))        
         self.dv_max     = torch.Tensor(dv_max)
-        self.dv_mean     = torch.Tensor(dv_mean)
+        self.dv_mean    = torch.Tensor(dv_mean)
+        self.lhs_minmax = lhs_minmax
+
+
         #Need to use np.linalg.eigh instead of .eig for numerical stability
         self.L_inv      = torch.Tensor(np.diag(1/np.linalg.eigh(self.cov)[0]))  # in the new basis where Cov = QLQ^(-1)
         self.evecs      = torch.Tensor(np.linalg.eigh(self.cov)[1]) #this is Q
@@ -137,13 +141,15 @@ class NNEmulator:
 
         self.output_dim = OUTPUT_DIM
 
-        self.n_bin          = 30 #Number of Tomographic bin
-        self.theta_bin      = 26
-        self.dropout        = 0.3
-        self.learningrate   = 5e-4
-        self.reduce_lr      = True
-        self.loss_vali_goal = 0.05
-        self.gpu_parallel   = False
+        self.n_bin            = 30 #Number of Tomographic bin
+        self.theta_bin        = 26
+        self.dropout          = 0.3
+        self.learningrate     = 5e-4
+        self.reduce_lr        = True
+        self.loss_vali_goal   = 0.05
+        self.gpu_parallel     = False
+        self.boundary_removal = True #Force points at the boundary of the box to have chi2=0
+        
     
             
         if model == 'simply_connected':
@@ -216,24 +222,14 @@ class NNEmulator:
         elif(model=='resnet_small_DES'):
             print("Using resnet_samll_DES model...")
             print("model output_dim: ", OUTPUT_DIM)
-            # self.model = nn.Sequential(
-            #     nn.Linear(N_DIM, 8192),
-            #     ResBlock(8192, 8192),
-            #     nn.Dropout(self.dropout),
-            #     # ResBlock(256, 512),
-            #     # nn.Dropout(self.dropout),
-            #     nn.PReLU(),
-            #     nn.Linear(8192, OUTPUT_DIM),
-            #     Affine()
-            #     )
-            # self.model = nn.Sequential(
-            #     nn.Linear(N_DIM, 512),
-            #     ResBlock(512, 4096),
-            #     nn.Dropout(self.dropout),
-            #     nn.PReLU(),
-            #     nn.Linear(4096, OUTPUT_DIM),
-            #     Affine()
-            #     )
+            self.model = nn.Sequential(
+                nn.Linear(N_DIM, 512),
+                ResBlock(512, 1024),
+                nn.Dropout(self.dropout),
+                nn.PReLU(),
+                nn.Linear(1024, OUTPUT_DIM),
+                Affine()
+                )
             # self.model = nn.Sequential(
             #     nn.Linear(N_DIM, 1024),
             #     ResBottle(1024, 4),
@@ -242,97 +238,12 @@ class NNEmulator:
             #     nn.Linear(1024, OUTPUT_DIM),
             #     Affine()
             # )
-            self.model = nn.Sequential(
-                nn.Linear(N_DIM, 512),
-                ResBottle(512, 4),
-                nn.Linear(512, OUTPUT_DIM),
-                Affine()
-            )
-
             # self.model = nn.Sequential(
-            #     nn.Linear(N_DIM, 1024),
-            #     ResBlock(1024, 1024),
-            #     nn.Dropout(self.dropout),
-            #     nn.PReLU(),
-            #     nn.Linear(1024, OUTPUT_DIM),
+            #     nn.Linear(N_DIM, 4056),
+            #     ResBottle(4056, 4),
+            #     nn.Linear(4056, OUTPUT_DIM),
             #     Affine()
-            #     )
-            # self.model = nn.Sequential(
-            #     nn.Linear(N_DIM, 4096),
-            #     ResBlock2(4096, 1024),
-            #     # nn.Dropout(self.dropout),
-            #     ResBlock2(4096, 1024),
-            #     # nn.Dropout(self.dropout),
-            #     ResBlock2(4096, 1024),
-            #     # nn.Dropout(self.dropout),
-            #     nn.PReLU(),
-            #     nn.Linear(4096, OUTPUT_DIM),
-            #     Affine()
-            #     )
-            # self.model = nn.Sequential(
-            #     nn.Linear(N_DIM, 8192),
-            #     ResBlock2(8192, 2048),
-            #     # nn.Dropout(self.dropout),
-            #     ResBlock2(8192, 2048),
-            #     # nn.Dropout(self.dropout),
-            #     ResBlock2(8192, 2048),
-            #     # nn.Dropout(self.dropout),
-            #     nn.PReLU(),
-            #     nn.Linear(8192, OUTPUT_DIM),
-            #     Affine()
-            #     )
-            #this kind of works for cs
-            # self.model = nn.Sequential(
-            #     nn.Linear(N_DIM, 1024),
-            #     ResBlock(1024, 4096),
-            #     nn.Dropout(self.dropout),
-            #     nn.PReLU(),
-            #     nn.Linear(4096, OUTPUT_DIM),
-            #     Affine()
-            #     )
-
-            #Chunhao's: seems to be too complicated
-            # self.model = nn.Sequential(
-            #     nn.Linear(N_DIM, 1000),
-            #     nn.PReLU(),
-            #     nn.Dropout(self.dropout),
-            #     ResBlock(1000, 500),
-            #     nn.Dropout(self.dropout),
-            #     ResBlock(500, 250),
-            #     nn.Dropout(self.dropout),
-            #     ResBlock(250, 125),
-            #     nn.Dropout(self.dropout),
-            #     nn.Linear(125, 500),
-            #     nn.PReLU(),
-            #     nn.Dropout(self.dropout),
-            #     nn.Linear(500, 1000),
-            #     nn.PReLU(),
-            #     nn.Dropout(self.dropout),
-            #     nn.Linear(1000, OUTPUT_DIM),
-            #     Affine()
-            #     )
-
-            # self.model = nn.Sequential(
-            #     nn.Linear(N_DIM, 64),
-            #     ResBlock(64, 1024),
-            #     nn.Dropout(self.dropout),
-            #     ResBlock(1024, 2048),
-            #     nn.Dropout(self.dropout),
-            #     ResBlock(2048, 4096),
-            #     nn.Dropout(self.dropout),
-            #     nn.PReLU(),
-            #     nn.Linear(4096, OUTPUT_DIM),
-            #     Affine()
-            #     )
-            # self.model = nn.Sequential(
-            #     nn.Linear(N_DIM, 10000),
-            #     ResBlock(10000, 10000),
-            #     nn.Dropout(self.dropout),
-            #     nn.PReLU(),
-            #     nn.Linear(10000, OUTPUT_DIM),
-            #     Affine()
-            #     )
-
+            # )
 
         
         ###use multi gpu with nn.DataParallel
@@ -377,23 +288,37 @@ class NNEmulator:
         tmp_L_inv            = self.L_inv.to(self.device).double() # in the new basis where Cov = QLQ^(-1)
 
         #X_train     = ((X.double() - self.X_mean)/self.X_std)
-        X_train     = ((X.double() - self.X_min)/(self.X_max - self.X_min))
+        #X_train     = ((X.double() - self.X_min)/(self.X_max - self.X_min))
+        X_train     = X.double()
         y_train     = y
         trainset    = torch.utils.data.TensorDataset(X_train, y_train)
         trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=1)
-    
-        for _ in epoch_range:
-            for i, data in enumerate(trainloader):    
-                X       = data[0].to(self.device).double()                  # This is input
-                Y_batch = data[1].to(self.device).double()                  # This is label
 
-                print("testing", X)
-                quit()
-
-                Y_pred  = self.model.train()(X) * tmp_dv_std #technically should add y_fid back, back loss=chi2 is the difference so they are the same
-
-                loss = torch.mean(torch.diagonal( torch.matmul( torch.matmul((Y_batch - Y_pred),tmp_L_inv), torch.t(Y_batch - Y_pred)) ) )
-                #loss = torch.mean(torch.abs(Y_batch - Y_pred)) * 1000000
+        for epoch in epoch_range:
+            for i, data in enumerate(trainloader):
+                X       = data[0].to(self.device).double()         
+                X_norm  = ((data[0]- self.X_min)/(self.X_max - self.X_min)).to(self.device).double() # This is input
+                Y_batch = data[1].to(self.device).double()         
+                                                # This is label
+                Y_pred  = self.model.train()(X_norm) * tmp_dv_std #technically should add y_fid back, back loss=chi2 is the difference so they are the same
+                
+                #TEST: turn on boundary_removal only after 100 epoch
+                # self.boundary_removal = False
+                # if epoch ==100 and i==0:
+                #     print("Turning on Boundary Removal: force these regions to have loss=0")
+                #     self.boundary_removal = True
+                
+                if self.boundary_removal:
+                    # Make a mask for boundary_removal, such that points near boundary don't contribute to the total chi2
+                    boundary_mask= []
+                    for k in range(len(X)):
+                        boundary_mask.append(boundary_check(X[k], self.lhs_minmax, rg=0.1))
+                    boundary_mask = torch.Tensor(boundary_mask)==False #This gives False for those in the boundary. Opposite to the origional function
+                    
+                    loss = torch.mean(torch.diagonal( torch.matmul( torch.matmul((Y_batch - Y_pred),tmp_L_inv), torch.t(Y_batch - Y_pred)) )[boundary_mask] )
+                    loss = torch.nan_to_num(loss) # prevent nan, should not happen with reasonable training set
+                else:
+                    loss = torch.mean(torch.diagonal( torch.matmul( torch.matmul((Y_batch - Y_pred),tmp_L_inv), torch.t(Y_batch - Y_pred)) ) )
 
                 self.optim.zero_grad()
                 loss.backward()
@@ -434,12 +359,18 @@ class NNEmulator:
         with torch.no_grad():
             X_mean = self.X_mean.clone().detach().to(self.device).double()
             X_std  = self.X_std.clone().detach().to(self.device).double()
-            #X_max  = self.X_max.clone().detach().to(self.device).double()
-            #X_min  = self.X_min.clone().detach().to(self.device).double()
+            X_max  = self.X_max.clone().detach().to(self.device).double()
+            X_min  = self.X_min.clone().detach().to(self.device).double()
 
-            y_pred = self.model.eval()((X.to(self.device) - X_mean) / X_std).double().cpu() * self.dv_std #normalization
-            #y_pred = self.model.eval()((X.to(self.device) - self.X_max) / (self.X_max - self.X_min)).double().cpu() * self.dv_std #normalization
-        
+            #=== mean/std normalization
+            # X_norm = (X.to(self.device) - X_mean) / X_std
+
+            #=== max/min normalization
+            X_norm = (X.to(self.device) - X_min) / (X_max - X_min)
+            X_norm = np.reshape(X_norm, (1, len(X_norm)))
+
+            y_pred = self.model.eval()(X_norm).double().cpu() * self.dv_std #normalization
+
         y_pred = y_pred @ torch.Tensor(np.transpose(self.evecs)) + self.dv_mean #change of basis
         return y_pred.double().numpy()
 
@@ -468,8 +399,8 @@ class NNEmulator:
         with h5.File(filename + '.h5', 'r') as f:
             self.X_mean  = torch.Tensor(f['X_mean'][:]).double()
             self.X_std   = torch.Tensor(f['X_std'][:]).double()
-            #self.X_max   = torch.Tensor(f['X_max'][:]).double()
-            #self.X_min   = torch.Tensor(f['X_min'][:]).double()
+            self.X_max   = torch.Tensor(f['X_max'][:]).double()
+            self.X_min   = torch.Tensor(f['X_min'][:]).double()
             self.dv_fid  = torch.Tensor(f['dv_fid'][:]).double()
             self.dv_std  = torch.Tensor(f['dv_std'][:]).double()
             self.dv_max  = torch.Tensor(f['dv_max'][:]).double()

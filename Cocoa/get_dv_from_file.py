@@ -1,4 +1,4 @@
-import sys,os
+import sys,os, signal, time
 from mpi4py import MPI
 import numpy as np
 import torch
@@ -21,32 +21,27 @@ samplefile = sys.argv[2]
 
 config = Config(configfile)
 
+# ============= signal handler =============
+# ==Not receiving sigTerm, not sure why===use timer for now===
+interrupted = False
+converged = False
+def signal_handler(signum, frame):
+    global interrupted
+    interrupted = True
 
-#KZ:  debugging
-# print("testing......\n")
-# print(config.n_train_iter)
-# print(config.config_args_lkl)
-# print(config.debug)
-# print(config.likelihood)
-# try:
-#     os.makedirs(config.savedir)
-# except FileExistsError:
-#     pass
-# quit()
-    
-# ============= LHS samples =================
-from pyDOE import lhs
-
-def get_lhs_samples(N_dim, N_lhs, lhs_minmax):
-    unit_lhs_samples = lhs(N_dim, N_lhs)
-    lhs_params = get_lhs_params_list(unit_lhs_samples, lhs_minmax)
-    return lhs_params
+start_minutes = time.time() / 60
+end_minutes = 60*7.9 ## 8 hours are usually maximum on seawulf, end the program at 7.9 hours to avoid losing everthing
+end_minutes = 60*47.9 ## 48 hours
 
 
 # ============= samples from posterior =========
 def get_samples_from_posterior(file_name):
-    posterior_params = np.load(file_name)
+    posterior_params = np.load(file_name, allow_pickle=True)
     return posterior_params
+
+start_minutes = time.time() / 60
+end_minutes = 60*7.9 ## 8 hours are usually maximum on seawulf, end the program at 7.9 hours to avoid losing everthing
+end_minutes = 60*47.9 ## 48 hours
 
 # ================== Calculate data vectors ==========================
 
@@ -59,8 +54,19 @@ def get_local_data_vector_list(params_list, rank):
     train_data_vector_list = []
     N_samples = len(params_list)
     N_local   = N_samples // size
-    count = 0    
+    count = 0   
+
     for i in range(rank * N_local, (rank + 1) * N_local):
+        signal.signal(signal.SIGTERM, signal_handler)
+        if interrupted or converged:
+            print("interrupted or converged, trying to save what we have for now. interrupted = "\
+                , interrupted, "convered = ", converged)
+            print("!!!!NOTE!!!!, this is not working on seawulf, not sure why")
+            break
+        if (time.time()/60 - start_minutes) > end_minutes:
+            print("about timeout, try to save what we have for now.")
+            break
+            
         params_arr  = np.array(list(params_list[i].values()))
         data_vector = cocoa_model.calculate_data_vector(params_list[i])
         train_params_list.append(params_arr)
@@ -69,6 +75,7 @@ def get_local_data_vector_list(params_list, rank):
             count +=1
         if rank==0 and count % 50 == 0:
             print("calculation progress, count = ", count)
+
     return train_params_list, train_data_vector_list
 
 ##should implement a BLOCK here for MPI safety
@@ -95,15 +102,30 @@ def get_data_vectors(params_list, comm, rank):
 
 if(rank==0):
     posterior_params = get_samples_from_posterior(samplefile)
+    # print("testing0000",posterior_params[0])
     print("testing:", np.shape(posterior_params))
 else:
     posterior_params = None
 
 posterior_params = comm.bcast(posterior_params, root=0)
+
+
+# # Can format better in the future. The following is needed when input is pure array (get_samples_from_posterior). 
+# # Not needed when input is list (get_samples_lhs.py). For example {"ns": 0.9 ....}
+# # The later is easier, but the former is needed for now.
+# # TODO: edit get_samples_from_posterior.py to make it a list directly
+# try:
+#     params_list = get_params_list(posterior_params, config.param_labels)
+# except:
+#     print("something wrong with input, it should be a .npy file generated with 'get_samples_from_posterior.py' ")
+#     print("what we get is: ", np.shape(posterior_params))
+#     quit()
+
 try:
-    params_list = get_params_list(posterior_params, config.param_labels)
+    assert len(config.param_labels) == len(posterior_params[0])
+    params_list = posterior_params
 except:
-    print("something wrong with input, it should be a .npy file generated with 'get_samples_from_posterior.py' or 'get_samples_lhs.py', where you do burn-in and thinning ")
+    print("something wrong with input. It should be a list. It should be a .npy file with 'get_samples_lhs.py' ")
     print("what we get is: ", np.shape(posterior_params))
     quit()
 
@@ -121,8 +143,8 @@ if(rank==0):
     except FileExistsError:
         pass
     if(config.save_train_data):
-        np.save(config.savedir + '/filename2_data_vectors.npy', train_data_vectors)
-        np.save(config.savedir + '/filename2_samples.npy', train_samples)
+        np.save(config.savedir + '/' + samplefile + '_data_vectors.npy', train_data_vectors)
+        np.save(config.savedir + '/' + samplefile + '_samples.npy', train_samples)
 
 print("DONE") 
 MPI.Finalize

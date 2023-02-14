@@ -28,6 +28,7 @@ def signal_handler(signum, frame):
 
 start_minutes = time.time() / 60
 end_minutes = 60*7.9 ## 8 hours are usually maximum on seawulf, end the program at 7.9 hours to avoid losing everthing
+end_minutes = 60*47.9 ## 48 hours
 
 # ============= signal handler =============
 
@@ -37,6 +38,9 @@ from pyDOE import lhs
 def get_lhs_samples(N_dim, N_lhs, lhs_minmax):
     unit_lhs_samples = lhs(N_dim, N_lhs, criterion='center')
     print("lhs samples generated with CRITERION = CENTER")
+
+    # unit_lhs_samples = lhs(N_dim, N_lhs, criterion='corr')
+    # print("lhs samples generated with CRITERION = CORR")
     lhs_params = get_lhs_params_list(unit_lhs_samples, lhs_minmax)
     return lhs_params
 

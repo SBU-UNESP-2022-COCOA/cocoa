@@ -5,6 +5,7 @@ import torch
 sys.path.insert(0, os.path.abspath(".."))
 
 from cocoa_emu import Config,NNEmulator, boundary_check
+
 debug=False
 
 configfile = sys.argv[1]
@@ -15,9 +16,9 @@ train_samples_files = sys.argv[2]
 file = sys.argv[2]
 
 resume     = False
-set_range  = True
+set_range  = False
 log_norm   = False
-model_path = 'projects/des_y3/emulator_output_cs_wcdm_NLA/lhs/dvs_for_training_2000k_test2/model_1'
+model_path = ''
 
 ### CONCATENATE TRAINING DATA
 #train_samples = []
@@ -36,6 +37,8 @@ if debug:
 
 
 if set_range:
+    print("should not use this now")
+    quit()
     print("setting ranges of samples")
     IA1 = train_samples[:,12]
     IA2 = train_samples[:,13]
@@ -53,7 +56,6 @@ if set_range:
             continue
     train_samples           = np.delete(train_samples,      rows_to_delete , 0)
     train_data_vectors      = np.delete(train_data_vectors, rows_to_delete , 0)
-
 
 
 # this script do the same thing for as train_emulator.py, but instead calculate the data_vactors for training, a set of
@@ -133,23 +135,19 @@ if len(sys.argv) > 3:
 print("Total samples enter the training: ", len(train_samples))
 
 ###============= Setting up validation set ============
-print("loading DES validation set")
-validation_samples =      np.load('./projects/des_y3/emulator_old/emulator_output_cs_wcdm_NLA/lhs/dvs_for_validation_10k/validation_samples.npy')
-validation_data_vectors = np.load('./projects/des_y3/emulator_old/emulator_output_cs_wcdm_NLA/lhs/dvs_for_validation_10k/validation_data_vectors.npy')[:,:OUTPUT_DIM]
+
+print("loading DES-LCDM validation set")
+validation_samples =      np.load('./projects/des_y3/emulator_output_cs_lcdm_NLA/lhs/dvs_for_validation_10k/validation_samples.npy')
+validation_data_vectors = np.load('./projects/des_y3/emulator_output_cs_lcdm_NLA/lhs/dvs_for_validation_10k/validation_data_vectors.npy')[:,:OUTPUT_DIM]
 
 print("removing boundaries for validation set")
 rows_to_delete = []
 for k in range(len(validation_samples)):
-    if boundary_check==True:
+    if boundary_check(validation_samples[k], config.lhs_minmax, rg=0.1)==True:
         rows_to_delete.append(int(k))
 validation_samples           = np.delete(validation_samples,      rows_to_delete , 0)
 validation_data_vectors      = np.delete(validation_data_vectors, rows_to_delete , 0)
-
 print("Total samples for Validation: ", len(validation_samples))
-
-# #TATT
-# validation_samples =      np.load('./projects/des_y3/emulator_output_cs_wcdm_TATT/lhs/dvs_for_validation_50k/validation_samples.npy')
-# validation_data_vectors = np.load('./projects/des_y3/emulator_output_cs_wcdm_TATT/lhs/dvs_for_validation_50k/validation_data_vectors.npy')[:,:OUTPUT_DIM]
 
 
 ###============= Normalize the data vectors for training; 
@@ -204,6 +202,7 @@ print("training with the following hyper paraters: batch_size = ", config.batch_
 emu = NNEmulator(config.n_dim, OUTPUT_DIM, 
                         dv_fid, dv_std, cov, dv_max, dv_mean, config.lhs_minmax,
                         device)
+
 if resume:
     print("resume training, loading from previous emulator", model_path)
     emu.load(model_path, map_location=torch.device(device))

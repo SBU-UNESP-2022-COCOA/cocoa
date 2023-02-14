@@ -44,9 +44,11 @@ def boundary_check(params, lhs_prior, rg=0.1):
     assert len(params)==len(reduced_range), "Length of LHS parameters not match"
     for i in range(len(params)):
         if params[i]<reduced_range[i][0] or params[i]>reduced_range[i][1]:
-            return True
+            tmp = True
+            break
         else:
-            return False
+            tmp = False
+    return tmp
 
 #returns a simple 2D array representing the prior after boundary removal; 0.1 means 5% on each side
 def get_lhs_box_reduced(lhs_prior, rg=0.1):

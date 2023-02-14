@@ -22,6 +22,16 @@ def get_lhs_samples(N_dim, N_lhs, lhs_minmax):
 
 validation_samples = np.load('./projects/des_y3/emulator_output_cs_lcdm_NLA/lhs/dvs_for_validation_10k/validation_samples.npy')
 
+y=torch.Tensor([1,2,2.5]).double()
+x=torch.Tensor([True,False,True])==True
+print("TESTING",y[x])
+x=torch.Tensor([True,True,True])==False
+print("TESTING",y[x])
+test = torch.mean(y[x])
+print(test)
+test = torch.nan_to_num(test)
+print(test)
+
 count = 0
 for i in range(len(validation_samples)):
     if boundary_check(validation_samples[i], config.lhs_minmax, rg=0.1):
