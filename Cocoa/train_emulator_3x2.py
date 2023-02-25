@@ -182,11 +182,8 @@ for i in range(BIN_NUMBER):
     print("Emulator Input Dim =  ", config.n_dim, 'output_dim = ', len(dv_fid))
 
     emu = NNEmulator(config.n_dim, OUTPUT_DIM, 
-                dv_fid, dv_std, cov, dv_max,
-                device)
-    # emu = NNEmulator(13, OUTPUT_DIM, 
-    #         dv_fid, dv_std, cov, dv_max,
-    #         device)
+                        dv_fid, dv_std, cov, dv_max, dv_mean, config.lhs_minmax,
+                        device, model='resnet_small_LSST')
     emu.train(TS, TDV, VS, VDV, batch_size=config.batch_size, n_epochs=config.n_epochs)
     print("model saved to ",str(config.savedir))
     emu.save(config.savedir + '/model_1')

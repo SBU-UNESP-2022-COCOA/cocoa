@@ -122,13 +122,13 @@ dv_mean = np.mean(train_data_vectors, axis=0)
 
 cov = config.cov[0:OUTPUT_DIM,0:OUTPUT_DIM] #np.loadtxt('lsst_y1_cov.txt')
 # do diagonalization C = QLQ^(T); Q is now change of basis matrix
-eigensys = np.linalg.eig(cov)
+eigensys = np.linalg.eigh(cov)
 evals = eigensys[0]
 evecs = eigensys[1]
 #change of basis
-tmp = np.array([dv_fid for _ in range(len(train_data_vectors))])
+tmp = np.array([dv_mean for _ in range(len(train_data_vectors))])
 train_data_vectors = np.transpose((np.linalg.inv(evecs) @ np.transpose(train_data_vectors - tmp)))#[pc_idxs])
-tmp = np.array([dv_fid for _ in range(len(validation_data_vectors))])
+tmp = np.array([dv_mean for _ in range(len(validation_data_vectors))])
 validation_data_vectors = np.transpose((np.linalg.inv(evecs) @ np.transpose(validation_data_vectors - tmp)))#[pc_idxs])
 
 #====================chi2 cut for test dvs===========================
@@ -141,8 +141,8 @@ if torch.cuda.is_available():
     device = 'cuda'
 else:
     device = 'cpu'
-    torch.set_num_interop_threads(60) # Inter-op parallelism
-    torch.set_num_threads(60) # Intra-op parallelism
+    torch.set_num_interop_threads(35) # Inter-op parallelism
+    torch.set_num_threads(35) # Intra-op parallelism
 
 print('Using device: ',device)
     
@@ -159,8 +159,8 @@ VDV = torch.Tensor(validation_data_vectors)
 print("training with the following hyper paraters: batch_size = ", config.batch_size, 'n_epochs = ', config.n_epochs)
 print("emulator info. INPUT_DIM = ", config.n_dim, "OUTPUT_DIM  = ", OUTPUT_DIM )
 emu = NNEmulator(config.n_dim, OUTPUT_DIM, 
-                        dv_fid, dv_std, cov, dv_max, dv_mean,
-                        device, model='resnet_small') #resnet_small as default
+                        dv_fid, dv_std, cov, dv_max, dv_mean, config.lhs_minmax,
+                        device, model='resnet_small_LSST')
 emu.train(TS, TDV, VS, VDV, batch_size=config.batch_size, n_epochs=config.n_epochs)
 print("model saved to ",str(config.savedir))
 emu.save(config.savedir + '/model_1')

@@ -113,6 +113,33 @@ class ResBottle(nn.Module):
 
         return o
 
+class DenseBlock(nn.Module):
+    def __init__(self, size, N):
+        super(DenseBlock, self).__init__()
+
+        self.size = size
+        self.N = N
+        encoded_size = size // N
+
+        self.norm1  = torch.nn.BatchNorm1d(encoded_size)
+        self.layer1 = nn.Linear(size,encoded_size)
+        self.act1   = nn.Tanh()
+
+        self.norm2  = torch.nn.BatchNorm1d(encoded_size)
+        self.layer2 = nn.Linear(encoded_size,encoded_size)
+        self.act2   = nn.Tanh()
+
+        self.norm3  = torch.nn.BatchNorm1d(size)
+        self.layer3 = nn.Linear(encoded_size,size)
+        self.act3   = nn.PReLU() #nn.Tanh()
+
+    def forward(self, x):
+        o1 = self.act1(self.norm1(self.layer1(x)))
+        o2 = self.act2(self.norm2(self.layer2(o1)))
+        o3 = self.norm3(self.layer3(o2))
+        o  = torch.cat((o3, x),0)
+
+        return self.act3(o)
 
 class NNEmulator:
     def __init__(self, N_DIM, OUTPUT_DIM, dv_fid, dv_std, cov, dv_max, dv_mean, lhs_minmax, device, model='resnet_small_DES', optim=None):
@@ -148,7 +175,7 @@ class NNEmulator:
         self.reduce_lr        = True
         self.loss_vali_goal   = 0.05
         self.gpu_parallel     = False
-        self.boundary_removal = True #Force points at the boundary of the box to have chi2=0
+        self.boundary_removal = False #Force points at the boundary of the box to have chi2=0
         
     
             
@@ -218,6 +245,14 @@ class NNEmulator:
                 nn.Linear(1024, OUTPUT_DIM),
                 Affine()
                 )
+            # self.model = nn.Sequential(
+            #     nn.Linear(N_DIM, 1024),
+            #     ResBottle(1024, 4),
+            #     ResBottle(1024, 4),
+            #     ResBottle(1024, 4),
+            #     nn.Linear(1024, OUTPUT_DIM),
+            #     Affine()
+            # )
 
         elif(model=='resnet_small_DES'):
             print("Using resnet_samll_DES model...")
@@ -239,9 +274,19 @@ class NNEmulator:
             #     Affine()
             # )
             # self.model = nn.Sequential(
-            #     nn.Linear(N_DIM, 4056),
-            #     ResBottle(4056, 4),
-            #     nn.Linear(4056, OUTPUT_DIM),
+            #     nn.Linear(N_DIM, 2048),
+            #     ResBottle(2048, 4),
+            #     nn.Linear(2048, OUTPUT_DIM),
+            #     Affine()
+            # )
+
+            # DenseBlock layers: DEBUGGING
+            # self.model = nn.Sequential(
+            #     nn.Linear(N_DIM, 64),
+            #     DenseBlock(64, 4),
+            #     # DenseBlock(128, 4),
+            #     # DenseBlock(256, 4),
+            #     nn.Linear(64, OUTPUT_DIM),
             #     Affine()
             # )
 
@@ -302,9 +347,9 @@ class NNEmulator:
                                                 # This is label
                 Y_pred  = self.model.train()(X_norm) * tmp_dv_std #technically should add y_fid back, back loss=chi2 is the difference so they are the same
                 
-                #TEST: turn on boundary_removal only after 100 epoch
+                ### TEST: turn on boundary_removal only after 100 epoch
                 # self.boundary_removal = False
-                # if epoch ==100 and i==0:
+                # if epoch ==150 and i==0:
                 #     print("Turning on Boundary Removal: force these regions to have loss=0")
                 #     self.boundary_removal = True
                 
