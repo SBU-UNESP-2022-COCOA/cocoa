@@ -178,8 +178,7 @@ end_idx   = 0
 
 for i in range(BIN_NUMBER):
     device='cpu'
-    emu = NNEmulator(config.n_dim, BIN_SIZE, config.dv_fid, config.dv_std, cov, config.dv_fid, config.dv_fid, device) #should privde dv_max instead of dv_fid, but emu.load will make it correct
-    emu.load('projects/lsst_y1/emulator_output/models/800k_lhs_only/model_' + str(i+1), map_location=torch.device('cpu'))
+    emu = NNEmulator(config.n_dim, BIN_SIZE, config.dv_fid, config.dv_std, cov, config.dv_fid,config.dv_fid, config.lhs_minmax ,device) #should privde dv_max instead of dv_fid, but emu.load will make it correct
     emu.load('projects/lsst_y1/emulator_output/models/model_' + str(i+1), map_location=torch.device('cpu'))
     print('emulator loaded', i+1)
     tmp = []
@@ -210,6 +209,8 @@ for i in range(len(dv_predict)):
     chi2_list.append(chi2)
     if chi2>1:
         count +=1
+    if chi2>0.3:
+        count2 +=1
 
 
 
@@ -219,6 +220,7 @@ chi2_list = np.array(chi2_list)
 print("average chi2 is: ", np.average(chi2_list))
 print("Warning: This can be different from the training-validation loss. It depends on the mask file you use.")
 print("points with chi2 > 1: ", count)
+print("points with chi2 > 0.3: ", count2)
 
 
 cmap = plt.cm.get_cmap('coolwarm')
@@ -243,23 +245,25 @@ plt.savefig("validation_chi2.pdf")
 #####PLOT 2d start######
 plt.figure().clear()
 
-#plt.scatter(logA, Omegam, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap)
-plt.scatter(logA, Omegam, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap,norm=matplotlib.colors.LogNorm())
-#plt.scatter(Omegam, Omegam_growth, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap,norm=matplotlib.colors.LogNorm())
-#plt.scatter(Omegam, Omegam_growth, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap)
-#plt.scatter(logA, Omegam_growth, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap,norm=matplotlib.colors.LogNorm())
-#plt.scatter(H0, Omegab, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap,norm=matplotlib.colors.LogNorm())
+
+# plt.scatter(logA, Omegam, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap,norm=matplotlib.colors.LogNorm())
+# plt.xlabel(r'$\log A$')
+# plt.ylabel(r'$\Omega_m$')
+
+
+
+
+
+plt.scatter(Omegam, Omegam_growth, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap,norm=matplotlib.colors.LogNorm())
+plt.xlabel(r'$\Omega_m$')
+plt.ylabel(r'$\Omega_m^{\rm growth}$')
+
+
+
 
 cb = plt.colorbar()
-
-plt.xlabel(r'$\log A$')
-plt.ylabel(r'$\Omega_m$')
-
-#plt.xlabel(r'$\Omega_m$')
-#plt.ylabel(r'$\Omega_m^{\rm growth}$')
-
 plt.legend()
-plt.savefig("validation.pdf")
+plt.savefig("validation_lcdm_LSST_CS.pdf")
 
 #####PLOT 2d end######
 

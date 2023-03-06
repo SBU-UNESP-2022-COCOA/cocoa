@@ -137,12 +137,13 @@ class DenseBlock(nn.Module):
         o1 = self.act1(self.norm1(self.layer1(x)))
         o2 = self.act2(self.norm2(self.layer2(o1)))
         o3 = self.norm3(self.layer3(o2))
-        o  = torch.cat((o3, x),0)
+        o  = torch.cat((o3, x),axis=1)
 
         return self.act3(o)
+#torch.nn.Conv1d(in_channels=7, out_channels=20, kernel_size=5, stride=2)
 
 class NNEmulator:
-    def __init__(self, N_DIM, OUTPUT_DIM, dv_fid, dv_std, cov, dv_max, dv_mean, lhs_minmax, device, model='resnet_small_DES', optim=None):
+    def __init__(self, N_DIM, OUTPUT_DIM, dv_fid, dv_std, cov, dv_max, dv_mean, lhs_minmax, device, model='resnet_small_LSST', optim=None):
 
         torch.set_default_dtype(torch.float64)
         self.N_DIM = N_DIM
@@ -236,21 +237,29 @@ class NNEmulator:
             print("Using resnet_samll_LSST model...")
             print("model output_dim: ", OUTPUT_DIM)
 
-            #this works for LSST Cosmic Shear LHS only, 800k training samples
-            self.model = nn.Sequential(
-                nn.Linear(N_DIM, 512),
-                ResBlock(512, 1024),
-                nn.Dropout(self.dropout),
-                nn.PReLU(),
-                nn.Linear(1024, OUTPUT_DIM),
-                Affine()
-                )
+            # #this works for LSST Cosmic Shear LHS only, 800k training samples
             # self.model = nn.Sequential(
-            #     nn.Linear(N_DIM, 1024),
-            #     ResBottle(1024, 4),
-            #     ResBottle(1024, 4),
-            #     ResBottle(1024, 4),
+            #     nn.Linear(N_DIM, 512),
+            #     ResBlock(512, 1024),
+            #     nn.Dropout(self.dropout),
+            #     nn.PReLU(),
             #     nn.Linear(1024, OUTPUT_DIM),
+            #     Affine()
+            #     )
+
+            self.model = nn.Sequential(
+                nn.Linear(N_DIM, 2048),
+                ResBottle(2048, 4),
+                nn.Linear(2048, OUTPUT_DIM),
+                Affine()
+            )
+            #TESTING: for LSST 2x2 LHS only, 800k training samples
+            # self.model = nn.Sequential(
+            #     nn.Linear(N_DIM, 256),
+            #     DenseBlock(256, 4),
+            #     DenseBlock(512, 4),
+            #     DenseBlock(1024, 4),
+            #     nn.Linear(2048, OUTPUT_DIM),
             #     Affine()
             # )
 

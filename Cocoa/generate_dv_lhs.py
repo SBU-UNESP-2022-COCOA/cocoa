@@ -27,8 +27,9 @@ def signal_handler(signum, frame):
     interrupted = True
 
 start_minutes = time.time() / 60
-end_minutes = 60*7.9 ## 8 hours are usually maximum on seawulf, end the program at 7.9 hours to avoid losing everthing
-end_minutes = 60*47.9 ## 48 hours
+#end_minutes = 60*7.9 ## 8 hours are usually maximum on seawulf, end the program at 7.9 hours to avoid losing everthing
+end_minutes = 60*47.9 ## 48 hours are usually maximum on seawulf, end the program at 7.9 hours to avoid losing everthing
+
 
 # ============= signal handler =============
 
@@ -63,7 +64,7 @@ def get_local_data_vector_list(params_list, rank):
         signal.signal(signal.SIGTERM, signal_handler)
         if interrupted or converged:
             print("interrupted or convered, trying to save what we have for now. interrupted = "\
-                , interrupted, "convered = ", convered)
+                , interrupted, "convered = ", converged)
             print("!!!!NOTE!!!!, this is not working on seawulf, not sure why")
             break
         if (time.time()/60 - start_minutes) > end_minutes:
