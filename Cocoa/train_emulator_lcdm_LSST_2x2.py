@@ -20,6 +20,8 @@ file = sys.argv[2]
 BIN_SIZE   = 780 # number of angular bins in each z-bin
 BIN_NUMBER = 2 # number of z-bins
 
+vali_path = "./projects/lsst_y1/emulator_output_3x2/lhs/dvs_for_validation_10k/validation"
+
 ### CONCATENATE TRAINING DATA
 #train_samples = []
 #train_data_vectors = []
@@ -112,8 +114,8 @@ if len(sys.argv) > 3:
 print("Total samples enter the training: ", len(train_samples))
 
 ###============= Setting up validation set ============
-validation_samples =      np.load('./projects/lsst_y1/emulator_old_3x2_with_PM/emulator_output_3x2/emu_validation/lhs/dvs_5k/validation_samples.npy')
-validation_data_vectors = np.load('./projects/lsst_y1/emulator_old_3x2_with_PM/emulator_output_3x2/emu_validation/lhs/dvs_5k/validation_data_vectors.npy')[:,:OUTPUT_DIM]
+validation_samples =      np.load(vali_path + '_samples.npy')
+validation_data_vectors = np.load(vali_path + '_data_vectors.npy')[:,:OUTPUT_DIM]
 
 ###============= Normalize the data vectors for training; 
 ###============= used to be based on dv_max; but change to eigen-basis is better##

@@ -8,142 +8,11 @@ import h5py as h5
 from torchvision import models
 from torchinfo import summary
 from .utils import *
-
-
-class Affine(nn.Module):
-    def __init__(self):
-        super(Affine, self).__init__()
-
-        self.gain = nn.Parameter(torch.ones(1))
-        self.bias = nn.Parameter(torch.zeros(1))
-
-    def forward(self, x):
-        return x * self.gain + self.bias
-
-class ResBlock(nn.Module):
-    def __init__(self, in_size, out_size):
-        super(ResBlock, self).__init__()
-        
-        if in_size != out_size:
-            self.skip = nn.Linear(in_size, out_size, bias=False)
-        else:
-            self.skip = nn.Identity()
-
-        self.layer1 = nn.Linear(in_size, out_size)
-        self.layer2 = nn.Linear(out_size, out_size)
-
-        self.norm1 = Affine()
-        self.norm2 = Affine()
-
-        # self.act1 = nn.PReLU()
-        # self.act2 = nn.PReLU()
-        self.act1 = nn.Tanh()
-        self.act2 = nn.Tanh()
-
-    def forward(self, x):
-        xskip = self.skip(x)
-
-        o1 = self.layer1(self.act1(self.norm1(x))) / np.sqrt(10)
-        o2 = self.layer2(self.act2(self.norm2(o1))) / np.sqrt(10) + xskip
-
-        return o2
-
-class ResBlock2(nn.Module):
-    def __init__(self, size, mid_size):
-        super(ResBlock2, self).__init__()
-        
-
-        self.skip = nn.Identity()
-
-        self.layer1 = nn.Linear(size, mid_size)
-        self.layer2 = nn.Linear(mid_size, mid_size)
-        self.layer3 = nn.Linear(mid_size, size)
-
-        # self.layer1 = nn.Linear(size, mid_size)
-        # self.layer2 = nn.Linear(mid_size, size)
-
-        self.norm1 = Affine()
-        self.norm2 = Affine()
-        self.norm3 = Affine()
-
-        # self.act1 = nn.PReLU()
-        # self.act2 = nn.PReLU()
-        self.act1 = nn.Tanh()
-        self.act2 = nn.Tanh()
-        self.act3 = nn.Tanh()
-
-    def forward(self, x):
-        xskip = self.skip(x)
-        o1 = self.layer1(self.act1(self.norm1(x)))  / np.sqrt(10)
-        o2 = self.layer2(self.act2(self.norm2(o1))) / np.sqrt(10) 
-        o3 = self.layer3(self.act3(self.norm3(o2))) / np.sqrt(10)+ xskip
-        return o3
-
-    # def forward(self, x):
-    #     xskip = self.skip(x)
-    #     o1 = self.layer1(self.act1(self.norm1(x)))  / np.sqrt(10)
-    #     o2 = self.layer2(self.act2(self.norm2(o1))) / np.sqrt(10) + xskip
-    #     return o2
-    
-class ResBottle(nn.Module):
-    def __init__(self, size, N):
-        super(ResBottle, self).__init__()
-
-        self.size = size
-        self.N = N
-        encoded_size = size // N
-
-        self.norm1  = torch.nn.BatchNorm1d(encoded_size)
-        self.layer1 = nn.Linear(size,encoded_size)
-        self.act1   = nn.Tanh()
-
-        self.norm2  = torch.nn.BatchNorm1d(encoded_size)
-        self.layer2 = nn.Linear(encoded_size,encoded_size)
-        self.act2   = nn.Tanh()
-
-        self.norm3  = torch.nn.BatchNorm1d(size)
-        self.layer3 = nn.Linear(encoded_size,size)
-        self.act3   = nn.PReLU() #nn.Tanh()
-
-    def forward(self, x):
-        o1 = self.act1(self.norm1(self.layer1(x)))
-        o2 = self.act2(self.norm2(self.layer2(o1)))
-        o3 = self.norm3(self.layer3(o2))
-        o  = self.act3(o3+x)
-
-        return o
-
-class DenseBlock(nn.Module):
-    def __init__(self, size, N):
-        super(DenseBlock, self).__init__()
-
-        self.size = size
-        self.N = N
-        encoded_size = size // N
-
-        self.norm1  = torch.nn.BatchNorm1d(encoded_size)
-        self.layer1 = nn.Linear(size,encoded_size)
-        self.act1   = nn.Tanh()
-
-        self.norm2  = torch.nn.BatchNorm1d(encoded_size)
-        self.layer2 = nn.Linear(encoded_size,encoded_size)
-        self.act2   = nn.Tanh()
-
-        self.norm3  = torch.nn.BatchNorm1d(size)
-        self.layer3 = nn.Linear(encoded_size,size)
-        self.act3   = nn.PReLU() #nn.Tanh()
-
-    def forward(self, x):
-        o1 = self.act1(self.norm1(self.layer1(x)))
-        o2 = self.act2(self.norm2(self.layer2(o1)))
-        o3 = self.norm3(self.layer3(o2))
-        o  = torch.cat((o3, x),axis=1)
-
-        return self.act3(o)
-#torch.nn.Conv1d(in_channels=7, out_channels=20, kernel_size=5, stride=2)
+import random, math
+from .modules import *
 
 class NNEmulator:
-    def __init__(self, N_DIM, OUTPUT_DIM, dv_fid, dv_std, cov, dv_max, dv_mean, lhs_minmax, device, model='resnet_small_LSST', optim=None):
+    def __init__(self, N_DIM, OUTPUT_DIM, dv_fid, dv_std, cov, dv_max, dv_mean, lhs_minmax, device, model='Transformer', optim=None):
 
         torch.set_default_dtype(torch.float64)
         self.N_DIM = N_DIM
@@ -247,21 +116,22 @@ class NNEmulator:
             #     Affine()
             #     )
 
-            self.model = nn.Sequential(
-                nn.Linear(N_DIM, 2048),
-                ResBottle(2048, 4),
-                nn.Linear(2048, OUTPUT_DIM),
-                Affine()
-            )
             #TESTING: for LSST 2x2 LHS only, 800k training samples
             # self.model = nn.Sequential(
-            #     nn.Linear(N_DIM, 256),
-            #     DenseBlock(256, 4),
-            #     DenseBlock(512, 4),
-            #     DenseBlock(1024, 4),
-            #     nn.Linear(2048, OUTPUT_DIM),
+            #     nn.Linear(N_DIM, 128),
+            #     #ResBottle(128,2),
+            #     TransformerBlock(16,4,False,0),
+            #     nn.Linear(2048,OUTPUT_DIM),
             #     Affine()
             # )
+            self.model = nn.Sequential(
+                nn.Linear(N_DIM, 128),
+                Expand2D(128,16),
+                TransformerBlock(16,4,False,0),
+                nn.Linear(2048,OUTPUT_DIM),
+                Affine()
+            )
+
 
         elif(model=='resnet_small_DES'):
             print("Using resnet_samll_DES model...")
@@ -298,6 +168,17 @@ class NNEmulator:
             #     nn.Linear(64, OUTPUT_DIM),
             #     Affine()
             # )
+
+        elif(model=='Transformer'):
+            print("Using Transformer")
+            print("model output_dim: ", OUTPUT_DIM)
+            self.model = nn.Sequential(
+                nn.Linear(N_DIM, 128),
+                Expand2D(128,16),
+                TransformerBlock(16,4,False,0),
+                nn.Linear(2048,OUTPUT_DIM),
+                Affine()
+            )
 
         
         ###use multi gpu with nn.DataParallel

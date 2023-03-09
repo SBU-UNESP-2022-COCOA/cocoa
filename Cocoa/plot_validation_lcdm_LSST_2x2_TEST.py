@@ -23,11 +23,11 @@ INPUT_DIM_CS = 13  # input dim of cosmic shear, excluding for example dz_lens an
 cut_boundary = False
 
 configfile              = './projects/lsst_y1/train_emulator_3x2.yaml'
-samples_validation_file = './projects/lsst_y1/emulator_output_3x2/emu_validation/lhs/dvs_5k/validation_samples.npy'
-dv_validation_file      = './projects/lsst_y1/emulator_output_3x2/emu_validation/lhs/dvs_5k/validation_data_vectors.npy'
+samples_validation_file = './projects/lsst_y1/emulator_output_3x2/lhs/dvs_for_validation_10k/validation_samples.npy'
+dv_validation_file      = './projects/lsst_y1/emulator_output_3x2/lhs/dvs_for_validation_10k/validation_data_vectors.npy'
 
 emu_model_cs  = 'projects/lsst_y1/emulator_output/models/model_1'
-emu_model_2x2 = 'projects/lsst_y1/emulator_output_3x2/models/2x2_800k/model_1'
+emu_model_2x2 = 'projects/lsst_y1/emulator_output_3x2/models/model_2x2'
 
 samples_validation = np.load(samples_validation_file)
 dv_validation      = np.load(dv_validation_file)[:,780:1560]
@@ -88,80 +88,80 @@ dz3 = samples_validation[:,8]
 dz4 = samples_validation[:,9]
 dz5 = samples_validation[:,10]
 
-#####Set Range####
-if cut_boundary:
-    print("setting ranges of validation plot")
-    rows_to_delete = []
+# #####Set Range####
+# if cut_boundary:
+#     print("setting ranges of validation plot")
+#     rows_to_delete = []
 
-    ## rg = range to be taken from the boundary, eg. rg=0.1 means 80% of EE box
-    rg = 0.00
-    logA_max = np.log(25) - rg*(np.log(25)-np.log(17))
-    logA_min = np.log(17) + rg*(np.log(25)-np.log(17))
-    omm_max  = 0.4  - rg*(0.4-0.24)
-    omm_min  = 0.24 + rg*(0.4-0.24)
-    ommg_max = 0.4  - rg*(0.4-0.24)
-    ommg_min = 0.24 + rg*(0.4-0.24)
-    ns_max   = 1.0  - rg*(1.0-0.92)
-    ns_min   = 0.92 + rg*(1.0-0.92)
-    omb_max  = 0.06 - rg*(0.06-0.04)
-    omb_min  = 0.04 + rg*(0.06-0.04)
+#     ## rg = range to be taken from the boundary, eg. rg=0.1 means 80% of EE box
+#     rg = 0.00
+#     logA_max = np.log(25) - rg*(np.log(25)-np.log(17))
+#     logA_min = np.log(17) + rg*(np.log(25)-np.log(17))
+#     omm_max  = 0.4  - rg*(0.4-0.24)
+#     omm_min  = 0.24 + rg*(0.4-0.24)
+#     ommg_max = 0.4  - rg*(0.4-0.24)
+#     ommg_min = 0.24 + rg*(0.4-0.24)
+#     ns_max   = 1.0  - rg*(1.0-0.92)
+#     ns_min   = 0.92 + rg*(1.0-0.92)
+#     omb_max  = 0.06 - rg*(0.06-0.04)
+#     omb_min  = 0.04 + rg*(0.06-0.04)
 
-    dz1_max  = 0.008  - rg*(0.008+0.008) 
-    dz1_min  = -0.008 + rg*(0.008+0.008) 
-    dz2_max  = 0.008  - rg*(0.008+0.008) 
-    dz2_min  = -0.008 + rg*(0.008+0.008) 
-    dz3_max  = 0.008  - rg*(0.008+0.008) 
-    dz3_min  = -0.008 + rg*(0.008+0.008) 
-    dz4_max  = 0.008  - rg*(0.008+0.008) 
-    dz4_min  = -0.008 + rg*(0.008+0.008) 
-    dz5_max  = 0.008  - rg*(0.008+0.008) 
-    dz5_min  = -0.008 + rg*(0.008+0.008) 
+#     dz1_max  = 0.008  - rg*(0.008+0.008) 
+#     dz1_min  = -0.008 + rg*(0.008+0.008) 
+#     dz2_max  = 0.008  - rg*(0.008+0.008) 
+#     dz2_min  = -0.008 + rg*(0.008+0.008) 
+#     dz3_max  = 0.008  - rg*(0.008+0.008) 
+#     dz3_min  = -0.008 + rg*(0.008+0.008) 
+#     dz4_max  = 0.008  - rg*(0.008+0.008) 
+#     dz4_min  = -0.008 + rg*(0.008+0.008) 
+#     dz5_max  = 0.008  - rg*(0.008+0.008) 
+#     dz5_min  = -0.008 + rg*(0.008+0.008) 
 
-    IA1_max  = 5  + rg*(10) 
-    IA1_min  = -5 + rg*(10)
-    IA2_max  = 5  + rg*(10) 
-    IA2_min  = -5 + rg*(10) 
-    for i in range(len(samples_validation)):
-        if logA[i]>logA_max or logA[i]<logA_min:
-            rows_to_delete.append(int(i))
-            continue
-        elif Omegam[i] > omm_max or  Omegam[i] < omm_min:
-            rows_to_delete.append(int(i))
-            continue
-        elif Omegam_growth[i] > ommg_max or  Omegam_growth[i] < ommg_min:
-            rows_to_delete.append(int(i))
-            continue
-        elif ns[i] > ns_max or  ns[i] < ns_min:
-            rows_to_delete.append(int(i))
-            continue
-        elif Omegab[i] > omb_max or  Omegab[i] < omb_min:
-            rows_to_delete.append(int(i))
-            continue
-        elif dz1[i] > dz1_max or  dz1[i] < dz1_min:
-            rows_to_delete.append(int(i))
-            continue
-        elif dz2[i] > dz2_max or  dz2[i] < dz2_min:
-            rows_to_delete.append(int(i))
-            continue
-        elif dz3[i] > dz3_max or  dz3[i] < dz3_min:
-            rows_to_delete.append(int(i))
-            continue
-        elif dz4[i] > dz4_max or  dz4[i] < dz4_min:
-            rows_to_delete.append(int(i))
-            continue
-        elif dz5[i] > dz5_max or  dz5[i] < dz5_min:
-            rows_to_delete.append(int(i))
-            continue
+#     IA1_max  = 5  + rg*(10) 
+#     IA1_min  = -5 + rg*(10)
+#     IA2_max  = 5  + rg*(10) 
+#     IA2_min  = -5 + rg*(10) 
+#     for i in range(len(samples_validation)):
+#         if logA[i]>logA_max or logA[i]<logA_min:
+#             rows_to_delete.append(int(i))
+#             continue
+#         elif Omegam[i] > omm_max or  Omegam[i] < omm_min:
+#             rows_to_delete.append(int(i))
+#             continue
+#         elif Omegam_growth[i] > ommg_max or  Omegam_growth[i] < ommg_min:
+#             rows_to_delete.append(int(i))
+#             continue
+#         elif ns[i] > ns_max or  ns[i] < ns_min:
+#             rows_to_delete.append(int(i))
+#             continue
+#         elif Omegab[i] > omb_max or  Omegab[i] < omb_min:
+#             rows_to_delete.append(int(i))
+#             continue
+#         elif dz1[i] > dz1_max or  dz1[i] < dz1_min:
+#             rows_to_delete.append(int(i))
+#             continue
+#         elif dz2[i] > dz2_max or  dz2[i] < dz2_min:
+#             rows_to_delete.append(int(i))
+#             continue
+#         elif dz3[i] > dz3_max or  dz3[i] < dz3_min:
+#             rows_to_delete.append(int(i))
+#             continue
+#         elif dz4[i] > dz4_max or  dz4[i] < dz4_min:
+#             rows_to_delete.append(int(i))
+#             continue
+#         elif dz5[i] > dz5_max or  dz5[i] < dz5_min:
+#             rows_to_delete.append(int(i))
+#             continue
 
-    samples_validation = np.delete(samples_validation, rows_to_delete , 0)
-    dv_validation      = np.delete(dv_validation, rows_to_delete , 0)
+#     samples_validation = np.delete(samples_validation, rows_to_delete , 0)
+#     dv_validation      = np.delete(dv_validation, rows_to_delete , 0)
 
-    logA = samples_validation[:,0]
-    ns = samples_validation[:,1]
-    Omegam = samples_validation[:,4]
-    Omegam_growth = samples_validation[:,5]
+#     logA = samples_validation[:,0]
+#     ns = samples_validation[:,1]
+#     Omegam = samples_validation[:,4]
+#     Omegam_growth = samples_validation[:,5]
 
-######
+# ######
 
 print('number of points to plot',len(samples_validation))
 
@@ -199,11 +199,11 @@ end_idx   = 0
 
 
 print("validating 3x2pt with seperating cosmic shear and 2x2")
-device = 'cuda'
-emu = NNEmulator(config.n_dim, BIN_SIZE, config.dv_fid, config.dv_std, cov, config.dv_fid, device) #should privde dv_max instead of dv_fid, but emu.load will make it correct
+device = 'cpu'
+emu = NNEmulator(config.n_dim, BIN_SIZE, config.dv_fid, config.dv_std, cov, config.dv_fid,config.dv_fid, config.lhs_minmax ,device) #should privde dv_max instead of dv_fid, but emu.load will make it correct
 
 print("using emulator of 2x2 part")
-emu.load(emu_model_2x2, map_location=torch.device('cuda'))
+emu.load(emu_model_2x2, map_location=torch.device('cpu'))
 print('emulator loaded 2x2pt')
 tmp = []
 for j in range(len(samples_validation)):
@@ -254,37 +254,23 @@ plt.hist(chi2_list, num_bins,
 
 plt.savefig("validation_chi2.pdf")
 
-####PLOT chi2 end
+#### PLOT chi2 end
 
-#####PLOT 2d start######
+##### PLOT 2d start ######
 plt.figure().clear()
 
-#plt.scatter(logA, Omegam, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap)
-#plt.scatter(logA, Omegam, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap,norm=matplotlib.colors.LogNorm())
-#plt.scatter(Omegam, Omegam_growth, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap,norm=matplotlib.colors.LogNorm())
-#plt.scatter(Omegam, Omegam_growth, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap)
-#plt.scatter(logA, Omegam_growth, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap,norm=matplotlib.colors.LogNorm())
-#plt.scatter(H0, Omegab, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap,norm=matplotlib.colors.LogNorm())
-
-print(chi2_list)
-quit()
-
-
-cb = plt.colorbar()
-
+plt.scatter(logA, Omegam, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap,norm=matplotlib.colors.LogNorm())
 plt.xlabel(r'$\log A$')
 plt.ylabel(r'$\Omega_m$')
 
-#plt.xlabel(r'$\Omega_m$')
-#plt.ylabel(r'$\Omega_m^{\rm growth}$')
-
+cb = plt.colorbar()
 plt.legend()
 plt.savefig("validation_lcdm_LSST_2x2_TEST.pdf")
 
-#####PLOT 2d end######
+##### PLOT 2d end ######
 
 
-##### PLOT 3d start###
+##### PLOT 3d start ######
 
 # fig = plt.figure(figsize = (10, 7))
 # ax = plt.axes(projection ="3d")
@@ -296,8 +282,7 @@ plt.savefig("validation_lcdm_LSST_2x2_TEST.pdf")
 # ax.azim = 150
 # ax.elev = 15
 
-##### PLOT 3d end###
-
+##### PLOT 3d end ######
 
 
 

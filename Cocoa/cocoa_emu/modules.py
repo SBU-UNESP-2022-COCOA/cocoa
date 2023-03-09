@@ -1,0 +1,274 @@
+import torch
+from torch import nn
+import torch.nn.functional as F
+import random, math
+
+class Affine(nn.Module):
+    def __init__(self):
+        super(Affine, self).__init__()
+
+        self.gain = nn.Parameter(torch.ones(1))
+        self.bias = nn.Parameter(torch.zeros(1))
+
+    def forward(self, x):
+        return x * self.gain + self.bias
+
+class ResBlock(nn.Module):
+    def __init__(self, in_size, out_size):
+        super(ResBlock, self).__init__()
+        
+        if in_size != out_size:
+            self.skip = nn.Linear(in_size, out_size, bias=False)
+        else:
+            self.skip = nn.Identity()
+
+        self.layer1 = nn.Linear(in_size, out_size)
+        self.layer2 = nn.Linear(out_size, out_size)
+
+        self.norm1 = Affine()
+        self.norm2 = Affine()
+
+        # self.act1 = nn.PReLU()
+        # self.act2 = nn.PReLU()
+        self.act1 = nn.Tanh()
+        self.act2 = nn.Tanh()
+
+    def forward(self, x):
+        xskip = self.skip(x)
+
+        o1 = self.layer1(self.act1(self.norm1(x))) / np.sqrt(10)
+        o2 = self.layer2(self.act2(self.norm2(o1))) / np.sqrt(10) + xskip
+
+        return o2
+
+class ResBlock2(nn.Module):
+    def __init__(self, size, mid_size):
+        super(ResBlock2, self).__init__()
+        
+
+        self.skip = nn.Identity()
+
+        self.layer1 = nn.Linear(size, mid_size)
+        self.layer2 = nn.Linear(mid_size, mid_size)
+        self.layer3 = nn.Linear(mid_size, size)
+
+        # self.layer1 = nn.Linear(size, mid_size)
+        # self.layer2 = nn.Linear(mid_size, size)
+
+        self.norm1 = Affine()
+        self.norm2 = Affine()
+        self.norm3 = Affine()
+
+        # self.act1 = nn.PReLU()
+        # self.act2 = nn.PReLU()
+        self.act1 = nn.Tanh()
+        self.act2 = nn.Tanh()
+        self.act3 = nn.Tanh()
+
+    def forward(self, x):
+        xskip = self.skip(x)
+        o1 = self.layer1(self.act1(self.norm1(x)))  / np.sqrt(10)
+        o2 = self.layer2(self.act2(self.norm2(o1))) / np.sqrt(10) 
+        o3 = self.layer3(self.act3(self.norm3(o2))) / np.sqrt(10)+ xskip
+        return o3
+
+    # def forward(self, x):
+    #     xskip = self.skip(x)
+    #     o1 = self.layer1(self.act1(self.norm1(x)))  / np.sqrt(10)
+    #     o2 = self.layer2(self.act2(self.norm2(o1))) / np.sqrt(10) + xskip
+    #     return o2
+    
+class ResBottle(nn.Module):
+    def __init__(self, size, N):
+        super(ResBottle, self).__init__()
+
+        self.size = size
+        self.N = N
+        encoded_size = size // N
+
+        self.norm1  = torch.nn.BatchNorm1d(encoded_size)
+        self.layer1 = nn.Linear(size,encoded_size)
+        self.act1   = nn.Tanh()
+
+        self.norm2  = torch.nn.BatchNorm1d(encoded_size)
+        self.layer2 = nn.Linear(encoded_size,encoded_size)
+        self.act2   = nn.Tanh()
+
+        self.norm3  = torch.nn.BatchNorm1d(size)
+        self.layer3 = nn.Linear(encoded_size,size)
+        self.act3   = nn.PReLU() #nn.Tanh()
+
+    def forward(self, x):
+        o1 = self.act1(self.norm1(self.layer1(x)))
+        o2 = self.act2(self.norm2(self.layer2(o1)))
+        o3 = self.norm3(self.layer3(o2))
+        o  = self.act3(o3+x)
+
+        return o
+
+class DenseBlock(nn.Module):
+    def __init__(self, size, N):
+        super(DenseBlock, self).__init__()
+
+        self.size = size
+        self.N = N
+        encoded_size = size // N
+
+        self.norm1  = torch.nn.BatchNorm1d(encoded_size)
+        self.layer1 = nn.Linear(size,encoded_size)
+        self.act1   = nn.Tanh()
+
+        self.norm2  = torch.nn.BatchNorm1d(encoded_size)
+        self.layer2 = nn.Linear(encoded_size,encoded_size)
+        self.act2   = nn.Tanh()
+
+        self.norm3  = torch.nn.BatchNorm1d(size)
+        self.layer3 = nn.Linear(encoded_size,size)
+        self.act3   = nn.PReLU() #nn.Tanh()
+
+    def forward(self, x):
+        o1 = self.act1(self.norm1(self.layer1(x)))
+        o2 = self.act2(self.norm2(self.layer2(o1)))
+        o3 = self.norm3(self.layer3(o2))
+        o  = torch.cat((o3, x),axis=1)
+
+        return self.act3(o)
+
+
+### From https://github.com/pbloem/former/blob/b438731ceeaf6c468f8b961bb07c2adde3b54a9f/former/modules.py#L10
+class TransformerBlock(nn.Module):
+    def __init__(self, emb, heads, mask,  seq_length, ff_hidden_mult=4, dropout=0.0):
+        super().__init__()
+
+        self.attention = SelfAttention(emb, heads=heads, mask=mask)
+        self.mask = mask
+
+        self.norm1 = nn.LayerNorm(emb)
+        self.norm2 = nn.LayerNorm(emb)
+
+        self.ff = nn.Sequential(
+            nn.Linear(emb, ff_hidden_mult * emb),
+            nn.ReLU(),
+            nn.Linear(ff_hidden_mult * emb, emb)
+        )
+
+        self.do = nn.Dropout(dropout)
+
+    def forward(self, x):
+
+        #KZ
+        #x = torch.stack([x,x,x,x],dim=2)
+
+        attended = self.attention(x)
+
+        #KZ
+        #x = torch.stack([x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x],dim=2)
+        #print("TEST",x.size(), attended.size() )
+        x = self.norm1(attended + x)
+
+        x = self.do(x)
+
+        fedforward = self.ff(x)
+
+        x = self.norm2(fedforward + x)
+
+        x = self.do(x)
+        
+        #KZ
+        #print("TEST", x.size())
+        tmp1,tmp2,tmp3 = x.size()
+        x = torch.flatten(x)
+        x = torch.reshape(x,(tmp1,tmp2*tmp3))
+        return x
+
+class SelfAttention(nn.Module):
+    def __init__(self, emb, heads=8, mask=False):
+        """
+        :param emb:
+        :param heads:
+        :param mask:
+        """
+
+        super().__init__()
+
+        self.emb = emb
+        self.heads = heads
+        self.mask = mask
+
+        self.tokeys = nn.Linear(emb, emb * heads, bias=False)
+        self.toqueries = nn.Linear(emb, emb * heads, bias=False)
+        self.tovalues = nn.Linear(emb, emb * heads, bias=False)
+
+        self.unifyheads = nn.Linear(heads * emb, emb)
+
+    def forward(self, x):
+
+    #KZ
+        #tmp1, tmp2 = x.size()
+        #x = torch.stack([x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x],dim=2)
+        #print(x.size())
+        b, t, e = x.size()
+
+        h = self.heads
+        assert e == self.emb, f'Input embedding dim ({e}) should match layer embedding dim ({self.emb})'
+
+        keys    = self.tokeys(x)   .view(b, t, h, e)
+        queries = self.toqueries(x).view(b, t, h, e)
+        values  = self.tovalues(x) .view(b, t, h, e)
+
+        # compute scaled dot-product self-attention
+
+        # - fold heads into the batch dimension
+        keys = keys.transpose(1, 2).contiguous().view(b * h, t, e)
+        queries = queries.transpose(1, 2).contiguous().view(b * h, t, e)
+        values = values.transpose(1, 2).contiguous().view(b * h, t, e)
+
+        # - get dot product of queries and keys, and scale
+        dot = torch.bmm(queries, keys.transpose(1, 2))
+        dot = dot / math.sqrt(e) # dot contains b*h  t-by-t matrices with raw self-attention logits
+
+        assert dot.size() == (b*h, t, t), f'Matrix has size {dot.size()}, expected {(b*h, t, t)}.'
+
+        if self.mask: # mask out the lower half of the dot matrix,including the diagonal
+            mask_(dot, maskval=float('-inf'), mask_diagonal=False)
+
+        dot = F.softmax(dot, dim=2) # dot now has row-wise self-attention probabilities
+
+        #KZ
+        #assert not util.contains_nan(dot[:, 1:, :]) # only the forst row may contain nan
+
+        if self.mask == 'first':
+            dot = dot.clone()
+            dot[:, :1, :] = 0.0
+            # - The first row of the first attention matrix is entirely masked out, so the softmax operation results
+            #   in a division by zero. We set this row to zero by hand to get rid of the NaNs
+
+        # apply the self attention to the values
+        out = torch.bmm(dot, values).view(b, h, t, e)
+
+        # swap h, t back, unify heads
+        out = out.transpose(1, 2).contiguous().view(b, t, h * e)
+
+        return self.unifyheads(out)
+
+
+#Expand a tensor of size(batch, t) to 3d(batch, t, k)
+class Expand2D(nn.Module):
+    def __init__(self,t, k, mask=False):
+
+        super().__init__()
+
+        self.k = k
+        self.t = t
+        self.layer = nn.Linear(t, t*self.k)
+
+
+    def forward(self, x):
+
+        tmp1, tmp2 = x.size()
+        tmp2 == self.t, f'Input embedding dim ({tmp2}) should match layer embedding dim ({self.t})'
+        
+        x = self.layer(x)
+        x = torch.reshape(x,(tmp1,tmp2,self.k))
+
+        return x

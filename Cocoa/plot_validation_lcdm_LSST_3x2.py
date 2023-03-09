@@ -23,11 +23,11 @@ INPUT_DIM_CS = 13  # input dim of cosmic shear, excluding for example dz_lens an
 cut_boundary = False
 
 configfile              = './projects/lsst_y1/train_emulator_3x2.yaml'
-samples_validation_file = './projects/lsst_y1/emulator_output_3x2/emu_validation/lhs/dvs_5k/validation_samples.npy'
-dv_validation_file      = './projects/lsst_y1/emulator_output_3x2/emu_validation/lhs/dvs_5k/validation_data_vectors.npy'
+samples_validation_file = './projects/lsst_y1/emulator_output_3x2/lhs/dvs_for_validation_10k/validation_samples.npy'
+dv_validation_file      = './projects/lsst_y1/emulator_output_3x2/lhs/dvs_for_validation_10k/validation_data_vectors.npy'
 
-emu_model_cs  = 'projects/lsst_y1/emulator_output/models/model_1'
-emu_model_2x2 = 'projects/lsst_y1/emulator_output_3x2/models/2x2_800k/model_1'
+emu_model_cs  = 'projects/lsst_y1/emulator_output/models/FINAL/model_1'
+emu_model_2x2 = 'projects/lsst_y1/emulator_output_3x2/models/model_2x2'
 
 
 def get_chi2(dv_predict, dv_exact, mask, cov_inv):
@@ -41,20 +41,8 @@ def get_chi2(dv_predict, dv_exact, mask, cov_inv):
 os.environ["OMP_NUM_THREADS"] = "1"
 config = Config(configfile)
 
-# samples_validation = np.load('projects/lsst_y1/emulator_output/emu_validation/noshift' + '/validation_samples.npy')
-# dv_validation      = np.load('projects/lsst_y1/emulator_output/emu_validation/noshift' + '/validation_data_vectors.npy')
-
-# samples_validation = np.load('projects/lsst_y1/emulator_output/emu_validation/noshift_withCMB' + '/validation_samples.npy')
-# dv_validation      = np.load('projects/lsst_y1/emulator_output/emu_validation/noshift_withCMB' + '/validation_data_vectors.npy')
-
-
 samples_validation = np.load(samples_validation_file)
 dv_validation      = np.load(dv_validation_file)
-
-# samples_validation = np.load('./projects/lsst_y1/emulator_output/post/noshift_100k/train_post_samples.npy')
-# dv_validation      = np.load('./projects/lsst_y1/emulator_output/post/noshift_100k/train_post_data_vectors.npy')
-
-
 
 if config.probe =='cosmic_shear':
     dv_validation = dv_validation[:,:OUTPUT_DIM]
@@ -169,35 +157,8 @@ bin_count = 0
 start_idx = 0
 end_idx   = 0
 
-
-#Loop over the models glue them together
-#It's more intuitive to take one sample at a time, but that would require too many loading of the emulator
-#The loop below is to get dv_predict of ALL samples, bin by bin.
-
-# for i in range(BIN_NUMBER):
-#     device='cpu'
-#     emu = NNEmulator(config.n_dim, BIN_SIZE, config.dv_fid, config.dv_std, cov, config.dv_fid, device) #should privde dv_max instead of dv_fid, but emu.load will make it correct
-#     emu.load('projects/lsst_y1/emulator_output/models/model_' + str(i+1))
-#     print('emulator loaded', i+1)
-#     tmp = []
-#     for j in range(len(samples_validation)):
-
-#         theta = torch.Tensor(samples_validation[j])
-#         dv_emu = emu.predict(theta)[0]
-
-
-#         tmp.append(dv_emu)
-#     tmp = np.array(tmp)
-
-#     if i==0:
-#         dv_predict = tmp
-#     else:
-#         dv_predict = np.append(dv_predict, tmp, axis = 1)
-
-
 print("validating 3x2pt with seperating cosmic shear and 2x2")
 for i in range(2):
-    i=1
     device='cpu'
     emu = NNEmulator(config.n_dim, BIN_SIZE, config.dv_fid, config.dv_std, cov, config.dv_fid,config.dv_fid, config.lhs_minmax ,device) #should privde dv_max instead of dv_fid, but emu.load will make it correct
     if i ==0:
@@ -225,8 +186,6 @@ for i in range(2):
 
         dv_predict = np.append(dv_predict, tmp, axis = 1) # add cs and 2x2 part
         
-
-
 print("testing", np.shape(dv_predict))
 
 chi2_list = []
@@ -238,8 +197,6 @@ for i in range(len(dv_predict)):
     if chi2>1:
         count +=1
 
-
-
 chi2_list = np.array(chi2_list)
 
 #print("testing",chi2_list)
@@ -247,8 +204,6 @@ print("average chi2 is: ", np.average(chi2_list))
 print("Warning: This can be different from the training-validation loss. It depends on the mask file you use.")
 print("points with chi2 > 1: ", count)
 
-
-cmap = plt.cm.get_cmap('coolwarm')
 
 ###PLOT chi2 start
 
@@ -269,27 +224,17 @@ plt.savefig("validation_chi2.pdf")
 
 #####PLOT 2d start######
 plt.figure().clear()
+cmap = plt.cm.get_cmap('coolwarm')
 
-#plt.scatter(logA, Omegam, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap)
 plt.scatter(logA, Omegam, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap,norm=matplotlib.colors.LogNorm())
-#plt.scatter(Omegam, Omegam_growth, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap,norm=matplotlib.colors.LogNorm())
-#plt.scatter(Omegam, Omegam_growth, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap)
-#plt.scatter(logA, Omegam_growth, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap,norm=matplotlib.colors.LogNorm())
-#plt.scatter(H0, Omegab, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap,norm=matplotlib.colors.LogNorm())
-
-cb = plt.colorbar()
-
 plt.xlabel(r'$\log A$')
 plt.ylabel(r'$\Omega_m$')
 
-#plt.xlabel(r'$\Omega_m$')
-#plt.ylabel(r'$\Omega_m^{\rm growth}$')
-
+cb = plt.colorbar()
 plt.legend()
 plt.savefig("validation_lcdm_LSST_3x2.pdf")
 
 #####PLOT 2d end######
-
 
 ##### PLOT 3d start###
 

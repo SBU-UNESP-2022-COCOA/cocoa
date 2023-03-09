@@ -53,7 +53,7 @@ elif config.probe=='3x2pt':
     train_data_vectors = train_data_vectors
     cov     = config.cov
     cov_inv = np.linalg.inv(config.cov) #NO mask here for cov_inv enters training
-    OUTPUT_DIM = config.output_dim #config will do it automatically, check config.py
+    OUTPUT_DIM = config.output_dims #config will do it automatically, check config.py
     dv_fid =config.dv_fid
     dv_std = config.dv_std
 else:
