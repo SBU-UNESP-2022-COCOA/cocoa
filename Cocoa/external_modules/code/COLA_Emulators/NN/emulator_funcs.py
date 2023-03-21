@@ -46,7 +46,7 @@ redshifts = np.array([9.182, 7.690, 6.579, 5.720, 5.036, 4.478, 4.015, 3.624, 3.
 redshifts = np.flip(redshifts)
 ks = np.genfromtxt(emu_path+'./Data/Reference_Cosmology_COLA/output/pofk_ref_total_z0.000.txt', unpack=True, usecols=(0))
 ks_high_precision = np.genfromtxt(emu_path+'./Data/Reference_Cosmology_COLA/pofk_ref_highprecision_total_z0.000.txt', unpack=True, usecols=(0))
-ks_default_precision = ks[:251] # We are only going to k=1.54
+ks_default_precision = ks[:512] # We are only going to k=1.54
 ks_high_precision = ks_high_precision[:256] # only going to k=3.14
 #------------------------------------------------------------------------------------------------------------
 def get_pk(h, Omegab, Omegam, As10to9, ns, w, redshifts = np.linspace(3, 0, 101), tau = 0.078):

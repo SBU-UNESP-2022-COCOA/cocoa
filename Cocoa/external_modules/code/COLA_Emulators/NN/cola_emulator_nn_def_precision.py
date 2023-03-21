@@ -16,7 +16,7 @@ cola_ks = emu.ks_default_precision
 ###### First of all: load the NN models
 nn_models = []
 for i in range(len(emu.redshifts)):
-    nn_models.append(keras.models.load_model(emulator_path+f'/NN_MODELS_Q/COLA_EMU_1_NHID=2_NEURONS=1024_z={emu.redshifts[i]:.3f}'))
+    nn_models.append(keras.models.load_model(emulator_path+f'/NN_MODELS_Q/COLA_EMU_1_NEW_NHID=2_NEURONS=1024_z={emu.redshifts[i]:.3f}'))
         
 ###### Loading mins and maxs for rescaling normalized log boosts and PC components
 mins, maxs = np.loadtxt(emulator_path+'/Data/mins_maxs.txt', unpack=True)
