@@ -41,8 +41,8 @@ p = samples.getParams()
 
 omm_geo    = []
 omm_growth = []
-w_geo    = []
-w_growth    = []
+w_geo      = []
+w_growth   = []
 logA_mini  = []
 ns_mini	  = []
 

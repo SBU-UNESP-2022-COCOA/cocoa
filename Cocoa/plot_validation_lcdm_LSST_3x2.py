@@ -11,9 +11,9 @@ from cocoa_emu.sampling import EmuSampler
 
 torch.set_default_dtype(torch.double)
 
-OUTPUT_DIM = 780
-BIN_SIZE   = 26 # number of angular bins in each z-bin
-BIN_NUMBER = 30 # number of z-bins
+# OUTPUT_DIM = 780
+# BIN_SIZE   = 26 # number of angular bins in each z-bin
+# BIN_NUMBER = 30 # number of z-bins
 
 ##3x2 setting: separate cosmic shear and 2x2pt
 BIN_SIZE     = 780 # number of angular bins in each z-bin
@@ -28,6 +28,7 @@ dv_validation_file      = './projects/lsst_y1/emulator_output_3x2/lhs/dvs_for_va
 
 emu_model_cs  = 'projects/lsst_y1/emulator_output/models/FINAL/model_1'
 emu_model_2x2 = 'projects/lsst_y1/emulator_output_3x2/models/model_2x2'
+emu_model_3x2 = 'projects/lsst_y1/emulator_output_3x2/models/model_3x2'
 
 
 def get_chi2(dv_predict, dv_exact, mask, cov_inv):
@@ -157,34 +158,49 @@ bin_count = 0
 start_idx = 0
 end_idx   = 0
 
-print("validating 3x2pt with seperating cosmic shear and 2x2")
-for i in range(2):
-    device='cpu'
-    emu = NNEmulator(config.n_dim, BIN_SIZE, config.dv_fid, config.dv_std, cov, config.dv_fid,config.dv_fid, config.lhs_minmax ,device) #should privde dv_max instead of dv_fid, but emu.load will make it correct
-    if i ==0:
-        print("using emulator of cosmic shear part")
-        emu.load(emu_model_cs, map_location=torch.device('cpu'))
-        print('emulator loaded cosmic shear')
-        tmp = []
-        for j in range(len(samples_validation)):
-            theta = torch.Tensor(samples_validation[j][0:INPUT_DIM_CS])
-            dv_emu = emu.predict(theta)[0]
-            tmp.append(dv_emu)
-        tmp = np.array(tmp)
+# print("validating 3x2pt with seperating cosmic shear and 2x2")
+# for i in range(2):
+#     device='cpu'
+#     emu = NNEmulator(config.n_dim, BIN_SIZE, config.dv_fid, config.dv_std, cov, config.dv_fid,config.dv_fid, config.lhs_minmax ,device) #should privde dv_max instead of dv_fid, but emu.load will make it correct
+#     if i ==0:
+#         print("using emulator of cosmic shear part")
+#         emu.load(emu_model_cs, map_location=torch.device('cpu'))
+#         print('emulator loaded cosmic shear')
+#         tmp = []
+#         for j in range(len(samples_validation)):
+#             theta = torch.Tensor(samples_validation[j][0:INPUT_DIM_CS])
+#             dv_emu = emu.predict(theta)[0]
+#             tmp.append(dv_emu)
+#         tmp = np.array(tmp)
 
-        dv_predict = tmp
-    elif i==1:
-        print("using emulator of 2x2 part")
-        emu.load(emu_model_2x2, map_location=torch.device('cpu'))
-        print('emulator loaded 2x2pt')
-        tmp = []
-        for j in range(len(samples_validation)):
-            theta = torch.Tensor(samples_validation[j])
-            dv_emu = emu.predict(theta)[0]
-            tmp.append(dv_emu)
-        tmp = np.array(tmp)
+#         dv_predict = tmp
+#     elif i==1:
+#         print("using emulator of 2x2 part")
+#         emu.load(emu_model_2x2, map_location=torch.device('cpu'))
+#         print('emulator loaded 2x2pt')
+#         tmp = []
+#         for j in range(len(samples_validation)):
+#             theta = torch.Tensor(samples_validation[j])
+#             dv_emu = emu.predict(theta)[0]
+#             tmp.append(dv_emu)
+#         tmp = np.array(tmp)
 
-        dv_predict = np.append(dv_predict, tmp, axis = 1) # add cs and 2x2 part
+#         dv_predict = np.append(dv_predict, tmp, axis = 1) # add cs and 2x2 part
+
+print("validating 3x2pt DIRECTLY")
+device='cpu'
+emu = NNEmulator(config.n_dim, BIN_SIZE, config.dv_fid, config.dv_std, cov, config.dv_fid,config.dv_fid, config.lhs_minmax ,device) #should privde dv_max instead of dv_fid, but emu.load will make it correct
+print("using emulator of 3x2")
+emu.load(emu_model_3x2, map_location=torch.device(device))
+print('emulator loaded 3x2')
+tmp = []
+for j in range(len(samples_validation)):
+    theta = torch.Tensor(samples_validation[j])
+    dv_emu = emu.predict(theta)[0]
+    tmp.append(dv_emu)
+tmp = np.array(tmp)
+
+dv_predict = tmp
         
 print("testing", np.shape(dv_predict))
 
@@ -232,6 +248,7 @@ plt.ylabel(r'$\Omega_m$')
 
 cb = plt.colorbar()
 plt.legend()
+plt.title('Simply Connected MLP')
 plt.savefig("validation_lcdm_LSST_3x2.pdf")
 
 #####PLOT 2d end######

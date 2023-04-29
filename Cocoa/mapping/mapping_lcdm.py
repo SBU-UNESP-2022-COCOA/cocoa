@@ -13,6 +13,13 @@ import getdist.plots as gdplt
 from getdist import MCSamples
 from getdist import loadMCSamples
 #from mpi4py import MPI
+import matplotlib.pylab as pylab
+params = {'legend.fontsize': 'x-large',
+         'axes.labelsize': 'x-large',
+         'axes.titlesize':'x-large',
+         'xtick.labelsize':'x-large',
+         'ytick.labelsize':'x-large'}
+pylab.rcParams.update(params)
 
 
 

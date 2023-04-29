@@ -26,8 +26,8 @@ configfile              = './projects/lsst_y1/train_emulator_3x2.yaml'
 samples_validation_file = './projects/lsst_y1/emulator_output_3x2/lhs/dvs_for_validation_10k/validation_samples.npy'
 dv_validation_file      = './projects/lsst_y1/emulator_output_3x2/lhs/dvs_for_validation_10k/validation_data_vectors.npy'
 
-emu_model_cs  = 'projects/lsst_y1/emulator_output/models/model_1'
-emu_model_2x2 = 'projects/lsst_y1/emulator_output_3x2/models/model_2x2'
+emu_model_cs  = 'projects/lsst_y1/emulator_output/models/FIANAL/model_1'
+emu_model_2x2 = 'projects/lsst_y1/emulator_output_3x2/models/FINAL/model_2x2'
 
 samples_validation = np.load(samples_validation_file)
 dv_validation      = np.load(dv_validation_file)[:,780:1560]

@@ -74,47 +74,56 @@ class NNEmulator:
         elif(model=='resnet'):
             print("Using resnet model...")
             print("model output_dim: ", OUTPUT_DIM)
+            # self.model = nn.Sequential(
+            #         nn.Linear(N_DIM, 128),
+            #         ResBlock(128, 256),
+            #         nn.Dropout(self.dropout),
+            #         ResBlock(256, 256),
+            #         nn.Dropout(self.dropout),
+            #         ResBlock(256, 256),
+            #         nn.Dropout(self.dropout),
+            #         ResBlock(256, 512),
+            #         nn.Dropout(self.dropout),
+            #         ResBlock(512, 512),
+            #         nn.Dropout(self.dropout),
+            #         ResBlock(512, 512),
+            #         nn.Dropout(self.dropout),
+            #         ResBlock(512, 1024),
+            #         nn.Dropout(self.dropout),
+            #         ResBlock(1024, 1024),
+            #         nn.Dropout(self.dropout),
+            #         ResBlock(1024, 1024),
+            #         nn.Dropout(self.dropout),
+            #         ResBlock(1024, 1024),
+            #         nn.Dropout(self.dropout),
+            #         ResBlock(1024, 1024),
+            #         Affine(),
+            #         nn.PReLU(),
+            #         nn.Linear(1024, OUTPUT_DIM),
+            #         Affine()
+            #     )
             self.model = nn.Sequential(
-                    nn.Linear(N_DIM, 128),
-                    ResBlock(128, 256),
-                    nn.Dropout(self.dropout),
-                    ResBlock(256, 256),
-                    nn.Dropout(self.dropout),
-                    ResBlock(256, 256),
-                    nn.Dropout(self.dropout),
-                    ResBlock(256, 512),
-                    nn.Dropout(self.dropout),
-                    ResBlock(512, 512),
-                    nn.Dropout(self.dropout),
-                    ResBlock(512, 512),
-                    nn.Dropout(self.dropout),
-                    ResBlock(512, 1024),
-                    nn.Dropout(self.dropout),
-                    ResBlock(1024, 1024),
-                    nn.Dropout(self.dropout),
-                    ResBlock(1024, 1024),
-                    nn.Dropout(self.dropout),
-                    ResBlock(1024, 1024),
-                    nn.Dropout(self.dropout),
-                    ResBlock(1024, 1024),
-                    Affine(),
-                    nn.PReLU(),
-                    nn.Linear(1024, OUTPUT_DIM),
-                    Affine()
+                nn.Linear(N_DIM, 512),
+                ResBlock(512, 1024),
+                nn.Dropout(self.dropout),
+                nn.PReLU(),
+                nn.Linear(1024, OUTPUT_DIM),
+                Affine()
                 )
+
         elif(model=='resnet_small_LSST'):
             print("Using resnet_samll_LSST model...")
             print("model output_dim: ", OUTPUT_DIM)
 
             # #this works for LSST Cosmic Shear LHS only, 800k training samples
-            # self.model = nn.Sequential(
-            #     nn.Linear(N_DIM, 512),
-            #     ResBlock(512, 1024),
-            #     nn.Dropout(self.dropout),
-            #     nn.PReLU(),
-            #     nn.Linear(1024, OUTPUT_DIM),
-            #     Affine()
-            #     )
+            self.model = nn.Sequential(
+                nn.Linear(N_DIM, 512),
+                ResBlock(512, 1024),
+                nn.Dropout(self.dropout),
+                nn.PReLU(),
+                nn.Linear(1024, OUTPUT_DIM),
+                Affine()
+                )
 
             #TESTING: for LSST 2x2 LHS only, 800k training samples
             # self.model = nn.Sequential(
@@ -124,61 +133,94 @@ class NNEmulator:
             #     nn.Linear(2048,OUTPUT_DIM),
             #     Affine()
             # )
+
+
+        elif(model=='DES'):
+
+            print("Using Transformer")
+            print("model output_dim: ", OUTPUT_DIM)
+            input_dim = 128
+            emb_dim   = 16
+            head_number = 1
+            transblock_number = 1
+            ff_hidden_mult = 1
+            print("Transformer summary; \
+                   input_dim = {%d}, embedding dim = {%d}, \
+                   head number ={%d}, transblock_number = {%d}" %(input_dim,emb_dim,head_number,transblock_number))
             self.model = nn.Sequential(
-                nn.Linear(N_DIM, 128),
-                Expand2D(128,16),
-                TransformerBlock(16,4,False,0),
-                nn.Linear(2048,OUTPUT_DIM),
+                nn.Linear(N_DIM, input_dim),
+                Expand2D(input_dim,emb_dim), # input_dim, emb
+                nn.PReLU(),
+                TransformerBlock(emb_dim,head_number,False,ff_hidden_mult), # emb; heads; mask
+                Squeeze(input_dim,emb_dim),
+                nn.Linear(input_dim*emb_dim, OUTPUT_DIM),
                 Affine()
             )
-
-
-        elif(model=='resnet_small_DES'):
-            print("Using resnet_samll_DES model...")
-            print("model output_dim: ", OUTPUT_DIM)
-            self.model = nn.Sequential(
-                nn.Linear(N_DIM, 512),
-                ResBlock(512, 1024),
-                nn.Dropout(self.dropout),
-                nn.PReLU(),
-                nn.Linear(1024, OUTPUT_DIM),
-                Affine()
-                )
-            # self.model = nn.Sequential(
-            #     nn.Linear(N_DIM, 1024),
-            #     ResBottle(1024, 4),
-            #     ResBottle(1024, 4),
-            #     ResBottle(1024, 4),
-            #     nn.Linear(1024, OUTPUT_DIM),
-            #     Affine()
-            # )
-            # self.model = nn.Sequential(
-            #     nn.Linear(N_DIM, 2048),
-            #     ResBottle(2048, 4),
-            #     nn.Linear(2048, OUTPUT_DIM),
-            #     Affine()
-            # )
-
-            # DenseBlock layers: DEBUGGING
-            # self.model = nn.Sequential(
-            #     nn.Linear(N_DIM, 64),
-            #     DenseBlock(64, 4),
-            #     # DenseBlock(128, 4),
-            #     # DenseBlock(256, 4),
-            #     nn.Linear(64, OUTPUT_DIM),
-            #     Affine()
-            # )
 
         elif(model=='Transformer'):
             print("Using Transformer")
             print("model output_dim: ", OUTPUT_DIM)
+
+
+            input_dim = 128 #128
+            emb_dim   = 16
+            head_number = 1
+            transblock_number = 1
+            ff_hidden_mult = 1
+            print("Transformer summary; \
+                   input_dim = {%d}, embedding dim = {%d}, \
+                   head number ={%d}, transblock_number = {%d}" %(input_dim,emb_dim,head_number,transblock_number))
             self.model = nn.Sequential(
-                nn.Linear(N_DIM, 128),
-                Expand2D(128,16),
-                TransformerBlock(16,4,False,0),
-                nn.Linear(2048,OUTPUT_DIM),
+                nn.Linear(N_DIM, input_dim),
+                Expand2D(input_dim,emb_dim), # input_dim, emb
+                nn.PReLU(),
+                TransformerBlock(emb_dim,head_number,False,ff_hidden_mult), # emb; heads; mask
+                Squeeze(input_dim,emb_dim),
+                nn.Linear(input_dim*emb_dim, OUTPUT_DIM),
                 Affine()
             )
+
+
+            # # Try Evan's implementation
+            # N_layers     = 1
+            # INT_DIM      = 256
+            # dim_frac     = 8
+            # outlayer_dim = 1024
+            # print("using evan's implementation")
+            # self.model = nn.Sequential(
+            #     nn.Linear(N_DIM, INT_DIM),
+            #     nn.Tanh(),
+            #     ResBlock(INT_DIM,INT_DIM),
+            #     ResBlock(INT_DIM,INT_DIM),
+            #     ResBlock(INT_DIM,INT_DIM),
+            #     nn.Linear(INT_DIM,outlayer_dim),
+            #     Attention_EV(outlayer_dim,dim_frac,self.device),
+            #     Transformer_EV(dim_frac,outlayer_dim//dim_frac,self.device),
+            #     nn.Linear(outlayer_dim,OUTPUT_DIM),
+            # )
+
+            # # Pytorch default self attention function
+            # input_dim = 128 #128
+            # emb_dim   = 16
+            # head_number = 1
+            # transblock_number = 1
+            # ff_hidden_mult = 1
+            # print("Transformer summary; \
+            #        input_dim = {%d}, embedding dim = {%d}, \
+            #        head number ={%d}, transblock_number = {%d}" %(input_dim,emb_dim,head_number,transblock_number))
+            # self.model = nn.Sequential(
+            #     nn.Linear(N_DIM, input_dim),
+            #     Expand2D(input_dim,emb_dim), # input_dim, emb
+            #     nn.PReLU(),
+            #     TransformerBlock_NN(emb_dim,head_number), # emb; heads; mask
+            #     TransformerBlock_NN(emb_dim,head_number), # emb; heads; mask
+            #     TransformerBlock_NN(emb_dim,head_number), # emb; heads; mask
+            #     TransformerBlock_NN(emb_dim,head_number), # emb; heads; mask
+            #     Squeeze(input_dim,emb_dim),
+            #     nn.Linear(input_dim*emb_dim, OUTPUT_DIM),
+            #     Affine()
+            # )
+
 
         
         ###use multi gpu with nn.DataParallel

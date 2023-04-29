@@ -2,6 +2,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 import random, math
+import numpy as np
 
 class Affine(nn.Module):
     def __init__(self):
@@ -137,7 +138,7 @@ class DenseBlock(nn.Module):
 
 ### From https://github.com/pbloem/former/blob/b438731ceeaf6c468f8b961bb07c2adde3b54a9f/former/modules.py#L10
 class TransformerBlock(nn.Module):
-    def __init__(self, emb, heads, mask,  seq_length, ff_hidden_mult=4, dropout=0.0):
+    def __init__(self, emb, heads, mask, ff_hidden_mult=4, dropout=0.0):
         super().__init__()
 
         self.attention = SelfAttention(emb, heads=heads, mask=mask)
@@ -148,11 +149,15 @@ class TransformerBlock(nn.Module):
 
         self.ff = nn.Sequential(
             nn.Linear(emb, ff_hidden_mult * emb),
-            nn.ReLU(),
+            #nn.ReLU(),
+            #nn.Tanh(),
+            nn.PReLU(),
+            #nn.Linear(emb, ff_hidden_mult * emb),
+            #nn.PReLU(),
             nn.Linear(ff_hidden_mult * emb, emb)
         )
 
-        self.do = nn.Dropout(dropout)
+        self.drop = nn.Dropout(dropout)
 
     def forward(self, x):
 
@@ -166,19 +171,19 @@ class TransformerBlock(nn.Module):
         #print("TEST",x.size(), attended.size() )
         x = self.norm1(attended + x)
 
-        x = self.do(x)
+        x = self.drop(x)
 
         fedforward = self.ff(x)
 
         x = self.norm2(fedforward + x)
 
-        x = self.do(x)
+        x = self.drop(x)
         
         #KZ
         #print("TEST", x.size())
-        tmp1,tmp2,tmp3 = x.size()
-        x = torch.flatten(x)
-        x = torch.reshape(x,(tmp1,tmp2*tmp3))
+        # tmp1,tmp2,tmp3 = x.size()
+        # x = torch.flatten(x)
+        # x = torch.reshape(x,(tmp1,tmp2*tmp3))
         return x
 
 class SelfAttention(nn.Module):
@@ -258,17 +263,125 @@ class Expand2D(nn.Module):
 
         super().__init__()
 
-        self.k = k
         self.t = t
+        self.k = k 
         self.layer = nn.Linear(t, t*self.k)
-
 
     def forward(self, x):
 
         tmp1, tmp2 = x.size()
-        tmp2 == self.t, f'Input embedding dim ({tmp2}) should match layer embedding dim ({self.t})'
+        assert tmp2 == self.t, f'Input embedding dim ({tmp2}) should match layer embedding dim ({self.t})'
         
         x = self.layer(x)
         x = torch.reshape(x,(tmp1,tmp2,self.k))
 
         return x
+
+class Squeeze(nn.Module):
+    def __init__(self,t, k, mask=False):
+
+        super().__init__()
+
+        self.t = t
+        self.k = k
+
+    def forward(self, x):
+        tmp1,tmp2,tmp3 = x.size()
+        assert tmp2 == self.t, f'Input embedding dim ({tmp2}) should match layer embedding dim ({self.t})'
+        assert tmp3 == self.k, f'Input embedding dim ({tmp3}) should match layer embedding dim ({self.k})'
+
+        x = torch.flatten(x)
+        x = torch.reshape(x,(tmp1,tmp2*tmp3))
+
+        return x
+
+class Attention_EV(nn.Module):
+    def __init__(self, in_size ,n_partitions,device):
+        super(Attention_EV, self).__init__()
+        self.embed_dim    = in_size//n_partitions
+        self.WQ           = nn.Linear(self.embed_dim,self.embed_dim)
+        self.WK           = nn.Linear(self.embed_dim,self.embed_dim)
+        self.WV           = nn.Linear(self.embed_dim,self.embed_dim)
+        self.act          = nn.Softmax(dim=2)
+        self.scale        = np.sqrt(self.embed_dim)
+        self.n_partitions = n_partitions
+        self.norm         = torch.nn.BatchNorm1d(in_size)
+        self.device       = device
+        
+    def forward(self, x):
+        batchsize = x.shape[0]
+
+        self.Q = torch.empty((batchsize,self.embed_dim,self.n_partitions)).to(self.device)
+        self.K = torch.empty((batchsize,self.embed_dim,self.n_partitions)).to(self.device)
+        self.V = torch.empty((batchsize,self.embed_dim,self.n_partitions)).to(self.device)
+
+        # stack the input to find Q,K,V
+        for i in range(self.n_partitions):
+            qi = self.WQ(self.norm(x)[:,i*self.embed_dim:(i+1)*self.embed_dim])
+            ki = self.WK(self.norm(x)[:,i*self.embed_dim:(i+1)*self.embed_dim])
+            vi = self.WV(self.norm(x)[:,i*self.embed_dim:(i+1)*self.embed_dim])
+
+            self.Q[:,:,i] = qi
+            self.K[:,:,i] = ki
+            self.V[:,:,i] = vi
+
+        # compute weighted dot product
+        dot_product = torch.bmm(self.Q,self.K.transpose(1, 2).contiguous())
+        normed_mat  = self.act(dot_product/self.scale)
+        prod        = torch.bmm(normed_mat,self.V)
+
+        #concat results of each head
+        out = torch.cat(tuple([prod[:,i] for i in range(self.embed_dim)]),dim=1)+x
+
+        return out
+
+
+class Transformer_EV(nn.Module):
+    def __init__(self, n_heads, int_dim,device):
+        super(Transformer_EV, self).__init__()  
+    
+        self.int_dim     = int_dim
+        self.n_heads     = n_heads
+        self.module_list = nn.ModuleList([nn.Linear(int_dim,int_dim) for i in range(n_heads)])
+        self.act         = nn.Tanh()#nn.SiLU()
+        self.norm        = torch.nn.BatchNorm1d(int_dim*n_heads)
+        self.device       = device
+
+    def forward(self,x):
+        # init result array
+        batchsize = x.shape[0]
+        
+        results = torch.empty((batchsize,self.int_dim,self.n_heads))
+
+        # do mlp for each head
+        for i,layer in enumerate(self.module_list):
+            o = self.norm(x)[:,i*self.int_dim:(i+1)*self.int_dim]
+            o = self.act(layer(o))
+            results[:,:,i] = o
+
+        # concat heads
+        out = torch.cat(tuple([results[:,i] for i in range(self.int_dim)]),dim=1).to(self.device)
+
+        return out+x
+
+# Transformer Block using the pytorch default self-attention function, nn.MultiheadAttention
+class TransformerBlock_NN(nn.Module):
+    def __init__(self, d_model, nhead, dim_feedforward=16, dropout=0.0):
+        super(TransformerBlock_NN, self).__init__()
+        self.self_attn = nn.MultiheadAttention(d_model, nhead)
+        self.linear1 = nn.Linear(d_model, dim_feedforward)
+        self.dropout = nn.Dropout(dropout)
+        self.linear2 = nn.Linear(dim_feedforward, d_model)
+        self.norm1 = nn.LayerNorm(d_model)
+        self.norm2 = nn.LayerNorm(d_model)
+        self.dropout1 = nn.Dropout(dropout)
+        self.dropout2 = nn.Dropout(dropout)
+        
+    def forward(self, src):
+        src2 = self.self_attn(src, src, src)[0]
+        src = src + self.dropout1(src2)
+        src = self.norm1(src)
+        src2 = self.linear2(self.dropout(F.relu(self.linear1(src))))
+        src = src + self.dropout2(src2)
+        src = self.norm2(src)
+        return src

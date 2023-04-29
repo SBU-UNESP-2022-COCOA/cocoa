@@ -31,7 +31,6 @@ def signal_handler(signum, frame):
 
 start_minutes = time.time() / 60
 end_minutes = 60*7.9 ## 8 hours are usually maximum on seawulf, end the program at 7.9 hours to avoid losing everthing
-end_minutes = 60*47.9 ## 48 hours
 
 
 # ============= samples from posterior =========
@@ -41,7 +40,7 @@ def get_samples_from_posterior(file_name):
 
 start_minutes = time.time() / 60
 end_minutes = 60*7.9 ## 8 hours are usually maximum on seawulf, end the program at 7.9 hours to avoid losing everthing
-end_minutes = 60*47.9 ## 48 hours
+# end_minutes = 60*47.9 ## 48 hours
 
 # ================== Calculate data vectors ==========================
 
@@ -143,8 +142,9 @@ if(rank==0):
     except FileExistsError:
         pass
     if(config.save_train_data):
-        np.save(config.savedir + '/' + samplefile + '_data_vectors.npy', train_data_vectors)
-        np.save(config.savedir + '/' + samplefile + '_samples.npy', train_samples)
+        print("saving to: ", config.savedir)
+        np.save(config.savedir + '/train_data_vectors.npy', train_data_vectors)
+        np.save(config.savedir + '/train_samples.npy', train_samples)
 
 print("DONE") 
 MPI.Finalize

@@ -7,9 +7,16 @@ from mpl_toolkits.mplot3d import axes3d
 from getdist import plots, MCSamples
 import getdist
 import seaborn as sns
+import matplotlib.pylab as pylab
+params = {'legend.fontsize': 'x-large',
+         'axes.labelsize': 'x-large',
+         'axes.titlesize':'x-large',
+         'xtick.labelsize':'x-large',
+         'ytick.labelsize':'x-large'}
+pylab.rcParams.update(params)
 
 
-end_idx = 21
+end_idx = 34
 
 with open("./mapping_splitwcdm/mapping_w2bin_0_"+str(end_idx)+".txt",'w') as output:
     for i in range(end_idx+1):
@@ -41,7 +48,7 @@ plt.scatter(pc_geo, pc_growth,label=r'Best fit of 2 w-bin', s = 2)
 
 plt.xlabel(r'$\Omega^{\rm geo} - w^{\rm geo}$')
 plt.ylabel(r'$\Omega^{\rm growth} - w^{\rm growth}$')
-plt.axline((1.3,1.3),(1.7,1.7), color='gray', ls='-',alpha=0.6)
+plt.axline((0.94,0.94),(1.7,1.7), color='gray', ls='-',alpha=0.6)
 # plt.axline((0.29,0.29+0.0639225),(0.34,0.34+0.0639225), color='gray', ls='-.',alpha=0.6)
 # plt.axline((0.29,0.29-0.0639225),(0.34,0.34-0.0639225), color='gray', ls='-.',alpha=0.36)
 

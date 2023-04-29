@@ -7,17 +7,24 @@ from mpl_toolkits.mplot3d import axes3d
 from getdist import plots, MCSamples
 import getdist
 import seaborn as sns
+import matplotlib.pylab as pylab
+params = {'legend.fontsize': 'x-large',
+         'axes.labelsize': 'x-large',
+         'axes.titlesize':'x-large',
+         'xtick.labelsize':'x-large',
+         'ytick.labelsize':'x-large'}
+pylab.rcParams.update(params)
 
 
 end_idx = 19
 
-with open("./mapping/mapping_lcdm_0_"+str(end_idx)+".txt",'w') as output:
+with open("./mapping/data/lcdm_planck/mapping_lcdm_0_"+str(end_idx)+".txt",'w') as output:
     for i in range(end_idx+1):
-        with open("./mapping/mapping_lcdm_"+str(i)+".txt",'r') as input:
+        with open("./mapping/data/lcdm_planck/mapping_lcdm_"+str(i)+".txt",'r') as input:
             for line in input:
                 output.write(line)
 
-samples = np.loadtxt("./mapping/mapping_lcdm_0_"+str(end_idx)+".txt")
+samples = np.loadtxt("./mapping/data/lcdm_planck/mapping_lcdm_0_"+str(end_idx)+".txt")
 print("checking shape: ",np.shape(samples))
 
 
@@ -39,7 +46,7 @@ plt.axline((0.29,0.29+0.0639225),(0.34,0.34+0.0639225), color='gray', ls='-.',al
 plt.axline((0.29,0.29-0.0639225),(0.34,0.34-0.0639225), color='gray', ls='-.',alpha=0.36)
 
 plt.legend()
-plt.savefig("./mapping/mapping_lcdm_v2.pdf")
+plt.savefig("./mapping/mapping_lcdm_v2.pdf",bbox_inches='tight')
 
 ### ========= Third Plot ========= ###
 plt.figure().clear()
@@ -65,4 +72,4 @@ plt.axline((0.29,0.29+0.0319612),(0.365,0.365+0.0319612), color='gray', ls='--',
 plt.axline((0.29,0.29-0.0319612),(0.365,0.365-0.0319612), color='gray', ls='-.',alpha=0.3)
 ##### GetDist #####
 
-plt.savefig("./mapping/mapping_lcdm_v3.pdf")
+plt.savefig("./mapping/mapping_lcdm_v3.pdf",bbox_inches='tight')

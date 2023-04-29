@@ -7,13 +7,20 @@ from mpl_toolkits.mplot3d import axes3d
 from getdist import plots, MCSamples
 import getdist
 import seaborn as sns
+import matplotlib.pylab as pylab
+params = {'legend.fontsize': 'x-large',
+         'axes.labelsize': 'x-large',
+         'axes.titlesize':'x-large',
+         'xtick.labelsize':'x-large',
+         'ytick.labelsize':'x-large'}
+pylab.rcParams.update(params)
 
 
 end_idx = 35
 
 with open("./mapping/mapping_w0wa_0_"+str(end_idx)+".txt",'w') as output:
     for i in range(end_idx+1):
-        with open("./mapping/mapping_w0wa_"+str(i)+".txt",'r') as input:
+        with open("./mapping/data/w0wa_planck_BAO_SN/mapping_w0wa_"+str(i)+".txt",'r') as input:
             for line in input:
                 output.write(line)
 
@@ -56,7 +63,7 @@ plt.axline((0.29,0.29+0.0639225),(0.34,0.34+0.0639225), color='gray', ls='-.',al
 plt.axline((0.29,0.29-0.0639225),(0.34,0.34-0.0639225), color='gray', ls='-.',alpha=0.36)
 
 plt.legend()
-plt.savefig("./mapping/mapping_w0wa_v2.pdf")
+plt.savefig("./mapping/mapping_w0wa_v2.pdf",bbox_inches='tight')
 
 ### ========= Third Plot ========= ###
 plt.figure().clear()
@@ -78,4 +85,4 @@ plt.axline((0.29,0.29+0.0639225),(0.365,0.365+0.0639225), color='gray', ls='-.',
 plt.axline((0.29,0.29-0.0639225),(0.365,0.365-0.0639225), color='gray', ls='-.',alpha=0.3)
 ##### GetDist #####
 
-plt.savefig("./mapping/mapping_w0wa_v3.pdf")
+plt.savefig("./mapping/mapping_w0wa_v3.pdf",bbox_inches='tight')

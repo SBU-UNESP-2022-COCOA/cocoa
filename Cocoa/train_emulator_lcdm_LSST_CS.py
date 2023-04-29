@@ -9,20 +9,24 @@ from cocoa_emu import NNEmulator
 
 debug=False
 
-configfile = sys.argv[1]
+configfile = "./projects/lsst_y1/train_emulator.yaml"
 config = Config(configfile)
 
 # Training set
-train_samples_files = sys.argv[2]
-file = sys.argv[2]
-
-### CONCATENATE TRAINING DATA
-#train_samples = []
-#train_data_vectors = []
-
-#for file in train_samples_files:
+file = "./projects/lsst_y1/emulator_output/lhs/dvs_for_training_800k/lhs_800k"
 train_samples=np.load(file+'_samples.npy')#.append(np.load(file+'_samples_0.npy'))
 train_data_vectors=np.load(file+'_data_vectors.npy')#.append(np.load(file+'_data_vectors_0.npy'))
+
+nn_model = "Transformer"
+
+### TEST start
+# nn_model = "resnet"
+# file = "./projects/lsst_y1/emulator_output_3x2_with_galaxy_bias/lhs/dvs_for_training_800k/train"
+# file = "./projects/lsst_y1/emulator_output_3x2/lhs/dvs_for_training_400k/train"
+# train_samples=np.load(file+'_samples.npy')
+# train_data_vectors=np.load(file+'_data_vectors.npy')
+# vali_path = "./projects/lsst_y1/emulator_output_3x2_with_galaxy_bias/lhs/dvs_for_validation_10k/validation"
+### TEST end
 if debug:
     print('(debug)')
     print('lhs')
@@ -160,7 +164,7 @@ print("training with the following hyper paraters: batch_size = ", config.batch_
 print("emulator info. INPUT_DIM = ", config.n_dim, "OUTPUT_DIM  = ", OUTPUT_DIM )
 emu = NNEmulator(config.n_dim, OUTPUT_DIM, 
                         dv_fid, dv_std, cov, dv_max, dv_mean, config.lhs_minmax,
-                        device, model='resnet_small_LSST')
+                        device, model=nn_model)
 emu.train(TS, TDV, VS, VDV, batch_size=config.batch_size, n_epochs=config.n_epochs)
 print("model saved to ",str(config.savedir))
 emu.save(config.savedir + '/model_1')
