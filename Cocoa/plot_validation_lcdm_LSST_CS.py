@@ -12,26 +12,8 @@ from cocoa_emu.sampling import EmuSampler
 torch.set_default_dtype(torch.double)
 
 OUTPUT_DIM = 780
-BIN_SIZE   = 26 # number of angular bins in each z-bin
-BIN_NUMBER = 30 # number of z-bins
-
-##3x2 setting: separate cosmic shear and 2x2pt
 BIN_SIZE   = 780 # number of angular bins in each z-bin
 BIN_NUMBER = 1 # number of z-bins
-
-# def get_chi2(theta, dv_exact, mask, cov_inv_masked):
-#     if(config.emu_type=='nn'):
-#         theta = torch.Tensor(theta)
-#     elif(config.emu_type=='gp'):
-#         theta = theta[np.newaxis]
-
-#     dv_emu = emu.predict(theta)[0]
-#     delta_dv = (dv_emu - np.float32(dv_exact) )[mask]
-#     ## GPU emulators works well with float32
-#     chi2 = np.matmul( np.matmul(np.transpose(delta_dv), np.float32(cov_inv_masked)) , delta_dv  )   
-#     #print(dv_emu.dtype, np.float32(dv_exact).dtype, config.masked_inv_cov.dtype) 
-#     #print(np.float32(dv_exact))
-#     return chi2
 
 def get_chi2(dv_predict, dv_exact, mask, cov_inv):
 
@@ -46,19 +28,11 @@ os.environ["OMP_NUM_THREADS"] = "1"
 configfile = './projects/lsst_y1/train_emulator.yaml'
 config = Config(configfile)
 
-# samples_validation = np.load('projects/lsst_y1/emulator_output/emu_validation/noshift' + '/validation_samples.npy')
-# dv_validation      = np.load('projects/lsst_y1/emulator_output/emu_validation/noshift' + '/validation_data_vectors.npy')
-
-# samples_validation = np.load('projects/lsst_y1/emulator_output/emu_validation/noshift_withCMB' + '/validation_samples.npy')
-# dv_validation      = np.load('projects/lsst_y1/emulator_output/emu_validation/noshift_withCMB' + '/validation_data_vectors.npy')
-
-
 samples_validation = np.load('./projects/lsst_y1/emulator_output/emu_validation/lhs/dvs_for_validation/validation_samples.npy')
 dv_validation      = np.load('./projects/lsst_y1/emulator_output/emu_validation/lhs/dvs_for_validation/validation_data_vectors.npy')
 
-# samples_validation = np.load('./projects/lsst_y1/emulator_output/post/noshift_100k/train_post_samples.npy')
-# dv_validation      = np.load('./projects/lsst_y1/emulator_output/post/noshift_100k/train_post_data_vectors.npy')
 
+emu_model_cs  = 'projects/lsst_y1/emulator_output/models/MLP/model_1'
 
 
 if config.probe =='cosmic_shear':
@@ -179,7 +153,7 @@ end_idx   = 0
 for i in range(BIN_NUMBER):
     device='cpu'
     emu = NNEmulator(config.n_dim, BIN_SIZE, config.dv_fid, config.dv_std, cov, config.dv_fid,config.dv_fid, config.lhs_minmax ,device) #should privde dv_max instead of dv_fid, but emu.load will make it correct
-    emu.load('projects/lsst_y1/emulator_output/models/model_' + str(i+1), map_location=torch.device('cpu'))
+    emu.load(emu_model_cs, map_location=torch.device('cpu'))
     print('emulator loaded', i+1)
     tmp = []
     for j in range(len(samples_validation)):
@@ -263,6 +237,9 @@ plt.ylabel(r'$\Omega_m^{\rm growth}$')
 
 cb = plt.colorbar()
 plt.legend()
+#plt.title('Transformer')
+#plt.title('ResNet')
+plt.title('Simply Connected MLP')
 plt.savefig("validation_lcdm_LSST_CS.pdf")
 
 #####PLOT 2d end######

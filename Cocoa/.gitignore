@@ -12,6 +12,7 @@ core.*
 *.egg-info/
 *.out
 *.out.err
+*.log
 
 Cocoa/external_modules/code/planck/code/spt_clik/svnversion
 Cocoa/external_modules/code/PolyChordLite/dist/

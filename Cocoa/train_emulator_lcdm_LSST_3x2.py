@@ -27,7 +27,7 @@ vali_path = "./projects/lsst_y1/emulator_output_3x2/lhs/dvs_for_validation_10k/v
 nn_model = "Transformer"
 
 ### TEST start
-nn_model = "resnet"
+# nn_model = "resnet"
 # file = "./projects/lsst_y1/emulator_output_3x2_with_galaxy_bias/lhs/dvs_for_training_800k/train"
 # file = "./projects/lsst_y1/emulator_output_3x2/lhs/dvs_for_training_400k/train"
 # train_samples=np.load(file+'_samples.npy')

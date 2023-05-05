@@ -11,8 +11,26 @@ debug=False
 
 configfile =  "./projects/lsst_y1/train_emulator_wcdm_3x2.yaml"
 config = Config(configfile)
+nn_model = "Transformer"
+#nn_model = "resnet"
 
-# Training set
+# # Training set 2000k
+# file1                = "./projects/lsst_y1/emulator_output_3x2_wcdm/lhs/dvs_for_training_2000k/train_1"
+# file2                = "./projects/lsst_y1/emulator_output_3x2_wcdm/lhs/dvs_for_training_2000k/train_2"
+# file3                = "./projects/lsst_y1/emulator_output_3x2_wcdm/lhs/dvs_for_training_2000k/train_3"
+# file4                = "./projects/lsst_y1/emulator_output_3x2_wcdm/lhs/dvs_for_training_2000k/train_4"
+# train_samples        = np.load(file1+'_samples.npy')#.append(np.load(file+'_samples_0.npy'))
+# train_data_vectors   = np.load(file1+'_data_vectors.npy')#.append(np.load(file+'_data_vectors_0.npy'))
+# train_samples_2      = np.load(file2+'_samples.npy')#.append(np.load(file+'_samples_0.npy'))
+# train_data_vectors_2 = np.load(file2+'_data_vectors.npy')#.append(np.load(file+'_data_vectors_0.npy'))
+# train_samples_3      = np.load(file3+'_samples.npy')#.append(np.load(file+'_samples_0.npy'))
+# train_data_vectors_3 = np.load(file3+'_data_vectors.npy')#.append(np.load(file+'_data_vectors_0.npy'))
+# train_samples_4      = np.load(file4+'_samples.npy')#.append(np.load(file+'_samples_0.npy'))
+# train_data_vectors_4 = np.load(file4+'_data_vectors.npy')#.append(np.load(file+'_data_vectors_0.npy'))
+# train_samples        = np.vstack((train_samples, train_samples_2,train_samples_3,train_samples_4))
+# train_data_vectors   = np.vstack((train_data_vectors, train_data_vectors_2,train_data_vectors_3,train_data_vectors_4))
+
+# Training set 1000k
 file1                = "./projects/lsst_y1/emulator_output_3x2_wcdm/lhs/dvs_for_training_1000k/train_1"
 file2                = "./projects/lsst_y1/emulator_output_3x2_wcdm/lhs/dvs_for_training_1000k/train_2"
 train_samples        = np.load(file1+'_samples.npy')#.append(np.load(file+'_samples_0.npy'))
@@ -21,6 +39,7 @@ train_samples_2      = np.load(file2+'_samples.npy')#.append(np.load(file+'_samp
 train_data_vectors_2 = np.load(file2+'_data_vectors.npy')#.append(np.load(file+'_data_vectors_0.npy'))
 train_samples        = np.vstack((train_samples, train_samples_2))
 train_data_vectors   = np.vstack((train_data_vectors, train_data_vectors_2))
+
 
 print("testing", np.shape(train_samples), np.shape(train_data_vectors))
 
@@ -169,7 +188,7 @@ for i in range(BIN_NUMBER):
 
     emu = NNEmulator(config.n_dim, OUTPUT_DIM, 
                         dv_fid, dv_std, cov, dv_max, dv_mean,config.lhs_minmax,
-                        device, model='Transformer')
+                        device, model=nn_model)
     emu.train(TS, TDV, VS, VDV, batch_size=config.batch_size, n_epochs=config.n_epochs)
     print("model saved to ",str(config.savedir))
     emu.save(config.savedir + '/model_3x2')

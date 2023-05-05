@@ -28,7 +28,8 @@ dv_validation_file      = './projects/lsst_y1/emulator_output_3x2/lhs/dvs_for_va
 
 emu_model_cs  = 'projects/lsst_y1/emulator_output/models/FINAL/model_1'
 emu_model_2x2 = 'projects/lsst_y1/emulator_output_3x2/models/model_2x2'
-emu_model_3x2 = 'projects/lsst_y1/emulator_output_3x2/models/model_3x2'
+
+emu_model_3x2 = 'projects/lsst_y1/emulator_output_3x2/models/Transformer/model_3x2'
 
 
 def get_chi2(dv_predict, dv_exact, mask, cov_inv):
@@ -223,6 +224,7 @@ print("points with chi2 > 1: ", count)
 
 ###PLOT chi2 start
 
+np.savetxt('chi2_list.txt',chi2_list)
 num_bins = 100
 plt.xlabel(r'$\chi^2$')
 plt.ylabel('distribution')
@@ -248,7 +250,7 @@ plt.ylabel(r'$\Omega_m$')
 
 cb = plt.colorbar()
 plt.legend()
-plt.title('Simply Connected MLP')
+plt.title('Transformer')
 plt.savefig("validation_lcdm_LSST_3x2.pdf")
 
 #####PLOT 2d end######

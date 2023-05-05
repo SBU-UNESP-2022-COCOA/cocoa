@@ -223,6 +223,7 @@ print("points with chi2 > 1: ", count)
 
 ###PLOT chi2 start
 
+np.savetxt('chi2_list.txt',chi2_list)
 num_bins = 100
 plt.xlabel(r'$\chi^2$')
 plt.ylabel('distribution')
