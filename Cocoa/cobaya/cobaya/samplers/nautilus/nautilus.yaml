@@ -1,0 +1,6 @@
+n_live: 1000
+
+parallel:
+  kind: multiprocessing
+  args:
+    threads: 3

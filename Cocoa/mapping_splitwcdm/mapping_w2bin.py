@@ -17,7 +17,7 @@ from getdist import loadMCSamples
 
 
 
-wbin_chains_root    = "./mapping/data/chains/EXAMPLE_MCMC4"
+wbin_chains_root    = "./mapping/data/chains/EXAMPLE_MCMC12"
 ggsplit_yaml_file   = "./projects/lsst_y1/EXAMPLE_MCMC515.yaml"
 ggsplit_chains_root = "./projects/lsst_y1/chains/EXAMPLE_MCMC515"
 

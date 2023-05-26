@@ -22,7 +22,7 @@ def get_lhs_samples(N_dim, N_lhs, lhs_minmax):
     lhs_params = get_lhs_params_list(unit_lhs_samples, lhs_minmax)
     return lhs_params
 
-n_split = 4
+n_split = 12
 
 
 #get full list

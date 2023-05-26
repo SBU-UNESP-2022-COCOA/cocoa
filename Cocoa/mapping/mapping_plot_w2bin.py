@@ -16,11 +16,10 @@ params = {'legend.fontsize': 'x-large',
 pylab.rcParams.update(params)
 
 
-end_idx = 21
-
+end_idx = 35
 with open("./mapping/mapping_w2bin_0_"+str(end_idx)+".txt",'w') as output:
     for i in range(end_idx+1):
-        with open("./mapping/data/2wbin_casarini/mapping_w2bin_"+str(i)+".txt",'r') as input:
+        with open("./mapping/mapping_w2bin_"+str(i)+".txt",'r') as input:
             for line in input:
                 output.write(line)
 

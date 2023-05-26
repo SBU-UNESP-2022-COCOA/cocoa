@@ -16,9 +16,9 @@ params = {'legend.fontsize': 'x-large',
 pylab.rcParams.update(params)
 
 
-end_idx = 21
+end_idx = 35
 
-file_prefix = "./mapping/data/2wbin_RT/mapping_w2bin_RT_"
+file_prefix = "./mapping/mapping_w2bin_RT_"
 
 with open(file_prefix + "0_"+str(end_idx)+".txt",'w') as output:
     for i in range(end_idx+1):

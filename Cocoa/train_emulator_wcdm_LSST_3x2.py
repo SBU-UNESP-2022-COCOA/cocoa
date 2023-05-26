@@ -11,10 +11,11 @@ debug=False
 
 configfile =  "./projects/lsst_y1/train_emulator_wcdm_3x2.yaml"
 config = Config(configfile)
-nn_model = "Transformer"
-#nn_model = "resnet"
+# nn_model = "Transformer"
+# nn_model = "resnet"
+nn_model = "simply_connected"
 
-# # Training set 2000k
+# # # Training set 2000k
 # file1                = "./projects/lsst_y1/emulator_output_3x2_wcdm/lhs/dvs_for_training_2000k/train_1"
 # file2                = "./projects/lsst_y1/emulator_output_3x2_wcdm/lhs/dvs_for_training_2000k/train_2"
 # file3                = "./projects/lsst_y1/emulator_output_3x2_wcdm/lhs/dvs_for_training_2000k/train_3"

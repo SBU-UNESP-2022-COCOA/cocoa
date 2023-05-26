@@ -17,11 +17,11 @@ from getdist import loadMCSamples
 
 
 
-wbin_chains_root    = "./mapping/data/chains/EXAMPLE_MCMC4"
+wbin_chains_root    = "./mapping/data/chains/EXAMPLE_MCMC12"
 ggsplit_yaml_file   = "./projects/lsst_y1/EXAMPLE_MCMC514.yaml"
 ggsplit_chains_root = "./projects/lsst_y1/chains/EXAMPLE_MCMC514"
 
-num_points_thin = 1500
+num_points_thin = 2000
 analysissettings={'smooth_scale_1D':0.35,'smooth_scale_2D':0.35,'ignore_rows': u'0.5',
 'range_confidence' : u'0.005'}
 

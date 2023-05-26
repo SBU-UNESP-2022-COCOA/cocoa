@@ -31,8 +31,10 @@ config = Config(configfile)
 samples_validation = np.load('./projects/lsst_y1/emulator_output/emu_validation/lhs/dvs_for_validation/validation_samples.npy')
 dv_validation      = np.load('./projects/lsst_y1/emulator_output/emu_validation/lhs/dvs_for_validation/validation_data_vectors.npy')
 
-
-emu_model_cs  = 'projects/lsst_y1/emulator_output/models/MLP/model_1'
+emu_model_cs  = 'projects/lsst_y1/emulator_output/models/FINAL/model_1' # this is Transformer; average chi2=0.09
+# emu_model_cs  = 'projects/lsst_y1/emulator_output/models/TransFormer/model_1'
+# emu_model_cs  = 'projects/lsst_y1/emulator_output/models/ResNet/model_1'
+# emu_model_cs  = 'projects/lsst_y1/emulator_output/models/MLP/model_1'
 
 
 if config.probe =='cosmic_shear':

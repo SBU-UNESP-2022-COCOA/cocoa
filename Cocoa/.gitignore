@@ -1,5 +1,6 @@
 chains/
-mapping/data/chains/
+mapping/data
+mapping/*.txt
 share/
 include/
 .local/
@@ -13,6 +14,7 @@ core.*
 *.out
 *.out.err
 *.log
+*.txt
 
 Cocoa/external_modules/code/planck/code/spt_clik/svnversion
 Cocoa/external_modules/code/PolyChordLite/dist/
