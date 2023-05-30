@@ -114,32 +114,44 @@ class nautilus(Sampler):
                 start =time.time()
                 sampler.run(verbose=True)
                 end   =time.time()
-                print("TESTING; run time = ", end-start)
+                print("run time = ", end-start)
         if is_main_process():
             self.save_raw(np.array([sampler.evidence()]))
-            points, log_w, log_l = sampler.posterior()
-            self.save_sample(points, np.exp(log_w), log_l, "1")
+            points, log_w, log_l = sampler.posterior(equal_weight=self.is_equal_weights)
+            self.save_sample(points, log_w, log_l, "1")
             self.mpi_info("nautilus finished")
         return
 
     def save_raw(self, logz):
         if is_main_process():
             # How to get directly output directory?
-            print("TEST", logz, type(logz), np.shape(logz))
             np.savetxt(self.base_dir + '.logz.txt',logz)
         return
 
-    def save_sample(self, samples, weights, loglikes, name):
+    def save_sample(self, samples, logweights, loglikes, name):
         if is_main_process():
             collection = SampleCollection(self.model, self.output, name=str(name))
-            for i in range(len(samples)):
-                collection.add(
-                    samples[i],
-                    # derived=row[2 + self.n_sampled:2 + self.n_sampled + self.n_derived], # can't handel derived now
-                    weight = weights[i],
-                    logpriors=self.model.logposterior(samples[i]).logpriors[0],
-                    loglikes=[loglikes[i]]
-                    )
+            if self.is_equal_weights:
+                for i in range(len(samples)):
+                    collection.add(
+                        samples[i],
+                        # derived=row[2 + self.n_sampled:2 + self.n_sampled + self.n_derived], # can't handel derived now
+                        weight = 1,
+                        logpriors=[self.model.logposterior(samples[i]).logpriors[0]],
+                        loglikes=[loglikes[i]]
+                        )
+            else:   
+                for i in range(len(samples)):
+                    # skip weight=0 samples
+                    if np.exp(logweights[i])==0:
+                        continue
+                    collection.add(
+                        samples[i],
+                        # derived=row[2 + self.n_sampled:2 + self.n_sampled + self.n_derived], # can't handel derived now
+                        weight = np.exp(logweights[i]),
+                        logpriors=[self.model.logposterior(samples[i]).logpriors[0]],
+                        loglikes=[loglikes[i]]
+                        )
             # make sure that the points are written
             collection.out_update()
             return

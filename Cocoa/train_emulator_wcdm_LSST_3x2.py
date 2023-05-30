@@ -31,18 +31,31 @@ nn_model = "simply_connected"
 # train_samples        = np.vstack((train_samples, train_samples_2,train_samples_3,train_samples_4))
 # train_data_vectors   = np.vstack((train_data_vectors, train_data_vectors_2,train_data_vectors_3,train_data_vectors_4))
 
-# Training set 1000k
-file1                = "./projects/lsst_y1/emulator_output_3x2_wcdm/lhs/dvs_for_training_1000k/train_1"
-file2                = "./projects/lsst_y1/emulator_output_3x2_wcdm/lhs/dvs_for_training_1000k/train_2"
-train_samples        = np.load(file1+'_samples.npy')#.append(np.load(file+'_samples_0.npy'))
-train_data_vectors   = np.load(file1+'_data_vectors.npy')#.append(np.load(file+'_data_vectors_0.npy'))
-train_samples_2      = np.load(file2+'_samples.npy')#.append(np.load(file+'_samples_0.npy'))
-train_data_vectors_2 = np.load(file2+'_data_vectors.npy')#.append(np.load(file+'_data_vectors_0.npy'))
-train_samples        = np.vstack((train_samples, train_samples_2))
-train_data_vectors   = np.vstack((train_data_vectors, train_data_vectors_2))
+# # Training set 1000k
+# file1                = "./projects/lsst_y1/emulator_output_3x2_wcdm/lhs/dvs_for_training_1000k/train_1"
+# file2                = "./projects/lsst_y1/emulator_output_3x2_wcdm/lhs/dvs_for_training_1000k/train_2"
+# train_samples        = np.load(file1+'_samples.npy')#.append(np.load(file+'_samples_0.npy'))
+# train_data_vectors   = np.load(file1+'_data_vectors.npy')#.append(np.load(file+'_data_vectors_0.npy'))
+# train_samples_2      = np.load(file2+'_samples.npy')#.append(np.load(file+'_samples_0.npy'))
+# train_data_vectors_2 = np.load(file2+'_data_vectors.npy')#.append(np.load(file+'_data_vectors_0.npy'))
+# train_samples        = np.vstack((train_samples, train_samples_2))
+# train_data_vectors   = np.vstack((train_data_vectors, train_data_vectors_2))
+
+# # Training set 5M!
+file_number = np.range(1,13)
+print(file_number)
+train_samples      = []
+train_data_vectors = []
+for i in file_number:
+    file                 = "./projects/lsst_y1/emulator_output_3x2_wcdm/lhs/dvs_for_training_5M/train_"+str(i)
+    tmp_samples          = np.load(file+'_samples.npy')#.append(np.load(file+'_samples_0.npy'))
+    tmp_data_vectors     = np.load(file+'_data_vectors.npy')#.append(np.load(file+'_data_vectors_0.npy'))
+    train_samples        = np.vstack((train_samples, tmp_samples))
+    train_data_vectors   = np.vstack((train_data_vectors, tmp_data_vectors))
 
 
 print("testing", np.shape(train_samples), np.shape(train_data_vectors))
+quit()
 
 ##3x2 setting; Not separate cosmic shear and 2x2pt
 BIN_SIZE   = 1560 # number of angular bins in each z-bin

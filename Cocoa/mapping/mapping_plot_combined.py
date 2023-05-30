@@ -18,7 +18,8 @@ pylab.rcParams.update(params)
 
 samples_lcdm = np.loadtxt("./mapping/data/lcdm_planck/mapping_lcdm_0_19.txt")
 samples_w0wa = np.loadtxt("./mapping/data/w0wa_planck_BAO_SN/mapping_w0wa_0_35.txt")
-samples_w2bin = np.loadtxt("./mapping/data/2wbin_casarini/mapping_w2bin_0_37.txt")
+samples_w2bin = np.loadtxt("./mapping/data/w2bin/mapping_w2bin_0_35.txt")
+samples_w2bin_RT = np.loadtxt("./mapping/data/w2bin/mapping_w2bin_RT_0_35.txt")
 
 omm_geo_1        = samples_lcdm[:,2]
 omm_growth_1     = samples_lcdm[:,3]
@@ -29,9 +30,12 @@ omm_growth_2     = samples_w0wa[:,3]
 omm_geo_3        = samples_w2bin[:,4]
 omm_growth_3     = samples_w2bin[:,5]
 
+omm_geo_4        = samples_w2bin_RT[:,4]
+omm_growth_4     = samples_w2bin_RT[:,5]
 
 
-# ### ========= Second Plot ========= ###
+
+### ========= First Plot ========= ###
 plt.figure().clear()
 
 fig, ax = plt.subplots(1,3, figsize=(35,10))
@@ -66,4 +70,45 @@ plt.subplots_adjust(wspace=0.1)
 #fig.tight_layout()
 plt.savefig("./mapping/mapping_combined.pdf",bbox_inches='tight')
 
+
+### ========= Second Plot ========= ###
+plt.figure().clear()
+
+fig, ax = plt.subplots(1,4, figsize=(42,10))
+
+ax[0].scatter(omm_geo_1, omm_growth_1,label=r'$\Lambda$CDM', s = 3)
+ax[1].scatter(omm_geo_2, omm_growth_2,label=r'$w_0 w_a$', s = 3)
+ax[2].scatter(omm_geo_3, omm_growth_3,label=r'2 w-bin with Pantheon', s = 3)
+ax[3].scatter(omm_geo_4, omm_growth_4,label=r'2 w-bin with Roman', s = 3)
+
+
+ax[0].set_xlabel(r'$\Omega^{\rm geo}$')
+ax[1].set_xlabel(r'$\Omega^{\rm geo}$')
+ax[2].set_xlabel(r'$\Omega^{\rm geo}$')
+ax[3].set_xlabel(r'$\Omega^{\rm geo}$')
+ax[0].set_ylabel(r'$\Omega^{\rm growth}$')
+ax[1].set_yticks([])
+ax[2].set_yticks([])
+ax[3].set_yticks([])
+
+for i in range(0,len(ax)):
+    ax[i].axline((0.29,0.29),(0.34,0.34), color='gray', ls='-',alpha=0.6)
+    ax[i].axline((0.24,0.24),(0.40,0.24), color='gray', ls='--',alpha=0.6)
+    ax[i].axline((0.24,0.40),(0.40,0.40), color='gray', ls='--',alpha=0.6)
+    # ax[i].axline((0.29,0.29+0.0639225),(0.34,0.34+0.0639225), color='gray', ls='-.',alpha=0.6)
+    # ax[i].axline((0.29,0.29-0.0639225),(0.34,0.34-0.0639225), color='gray', ls='-.',alpha=0.36)
+    ax[i].set_xlim([0.271,0.355])
+    ax[i].set_ylim([0.223,0.399])
+
+
+
+ax[0].legend(fontsize=31, loc='upper left')
+ax[1].legend(fontsize=31, loc='upper left')
+ax[2].legend(fontsize=31, loc='upper left')
+ax[3].legend(fontsize=31, loc='upper left')
+
+plt.subplots_adjust(wspace=0.1)
+
+#fig.tight_layout()
+plt.savefig("./mapping/mapping_combined_v2.pdf",bbox_inches='tight')
 

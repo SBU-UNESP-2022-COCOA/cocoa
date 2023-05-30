@@ -54,6 +54,7 @@ plt.axline((0.94,0.94),(1.7,1.7), color='gray', ls='-',alpha=0.6)
 
 plt.legend()
 plt.savefig("./mapping_splitwcdm/mapping_w2bin_RT_v2.pdf")
+print("saved")
 
 # ### ========= Third Plot ========= ###
 # plt.figure().clear()
