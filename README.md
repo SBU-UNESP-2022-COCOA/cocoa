@@ -296,6 +296,8 @@ MCMC:
 
 (**expert**) Why the `--mca btl tcp,self` flag? Conda-forge developers don't [compile OpenMPI with Infiniband compatibility](https://github.com/conda-forge/openmpi-feedstock/issues/38). Users outraged by the overhead that TCP will bring over Infiniband can perform the [installation via Cocoa's internal cache](#required_packages_cache). 
 
+(**warning**) A silent bug will be introduced if the yaml is not properly configured for camb. See Appendix(#appendix_example_runs) for examples of CosmoLike chains.
+
 (**expert**) Why the `--bind-to core --rank-by core --map-by numa:pe=${OMP_NUM_THREADS}` flag? To enable hybrid MPI + OpenMP run at UofA's supercomputer. *Users should check if the flag is necessary on their particular environment.*
 
 Once the work is done, type:
@@ -465,3 +467,12 @@ The installation of Cocoa required packages, as well as Boltzmann and Likelihood
  - [clean_all](https://github.com/CosmoLike/cocoa/blob/main/Cocoa/clean_all)
 
     This file has instructions on how to clean keys associated with the Python virtual environment and delete the compilation of the Boltzmann, Sampler, and likelihood codes, and local installation of the required packages installed by the [setup_cocoa_installation_packages].
+    
+### Examples of Weak Lensing Runs <a name="appendix_example_runs"></a>
+
+We have provided examples of Weak Lensing runs within specific projects such as:
+
+- [LSST-Y1](https://github.com/CosmoLike/cocoa_lsst_y1/blob/main/EXAMPLE_MCMC1.yaml)
+- [DES-Y3](https://github.com/CosmoLike/cocoa_des_y3/blob/main/EXAMPLE_MCMC1.yaml)
+
+(**Warning**) The CosmoLike pipeline takes $\Omega_m$ and $\Omega_b$ where as camb ONLY accepts $\Omega_c h^2$ and $\Omega_b h^2$. In the yamls provided the option `drop: true` is added and and also the derived expressions to convert to $\Omega_c h^2$. However, be aware that if this conversion is not present in the YAML file, a silent bug will be introduced: the chains will continue to run but without updating the matter density. Therefore, always ensure that the conversion is included in your YAML file!
