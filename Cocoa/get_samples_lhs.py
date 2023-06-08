@@ -12,7 +12,7 @@ from cocoa_emu.sampling import EmuSampler
 import emcee
 
 
-configfile = "./projects/lsst_y1/generate_dv_lhs_3x2_wcdm.yaml"
+configfile = "./projects/lsst_y1/generate_dv_lhs_3x2.yaml"
 config = Config(configfile)
 
 # ============= LHS samples =================
@@ -22,7 +22,7 @@ def get_lhs_samples(N_dim, N_lhs, lhs_minmax):
     lhs_params = get_lhs_params_list(unit_lhs_samples, lhs_minmax)
     return lhs_params
 
-n_split = 12
+n_split = 2
 
 
 #get full list

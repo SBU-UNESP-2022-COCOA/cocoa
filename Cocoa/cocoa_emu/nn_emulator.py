@@ -14,7 +14,7 @@ from .modules import *
 class NNEmulator:
     def __init__(self, N_DIM, OUTPUT_DIM, dv_fid, dv_std, cov, dv_max, dv_mean, lhs_minmax, device, model='Transformer', optim=None):
 
-        torch.set_default_dtype(torch.float64)
+        torch.set_default_dtype(torch.float32)
         self.N_DIM = N_DIM
         self.model = model
         self.optim = optim
@@ -102,9 +102,23 @@ class NNEmulator:
             #         nn.Linear(1024, OUTPUT_DIM),
             #         Affine()
             #     )
+            # self.model = nn.Sequential(
+            #     nn.Linear(N_DIM, 512),
+            #     ResBlock(512, 1024),
+            #     nn.Dropout(self.dropout),
+            #     nn.PReLU(),
+            #     nn.Linear(1024, OUTPUT_DIM),
+            #     Affine()
+            #     )
             self.model = nn.Sequential(
                 nn.Linear(N_DIM, 512),
                 ResBlock(512, 1024),
+                nn.Dropout(self.dropout),
+                nn.PReLU(),
+                ResBlock(1024, 1024),
+                nn.Dropout(self.dropout),
+                nn.PReLU(),
+                ResBlock(1024, 1024),
                 nn.Dropout(self.dropout),
                 nn.PReLU(),
                 nn.Linear(1024, OUTPUT_DIM),
@@ -228,7 +242,7 @@ class NNEmulator:
             print("training with gpu-parallel")
             self.model= nn.DataParallel(self.model)
         self.model.to(self.device)
-        self.model.to(torch.float64)
+        self.model.to(torch.float32)
         if self.optim is None:
             self.optim = torch.optim.Adam(self.model.parameters(), lr=self.learningrate)
         if self.reduce_lr == True:
@@ -237,8 +251,8 @@ class NNEmulator:
         
     def train(self, X, y, X_validation, y_validation, test_split=None, batch_size=32, n_epochs=100):
         if not self.trained:
-            self.X_mean = torch.Tensor(X.mean(axis=0, keepdims=True)).double()
-            self.X_std  = torch.Tensor(X.std(axis=0,  keepdims=True)).double()
+            self.X_mean = torch.Tensor(X.mean(axis=0, keepdims=True)).float()
+            self.X_std  = torch.Tensor(X.std(axis=0,  keepdims=True)).float()
             self.X_max, self.idx  = (torch.max(torch.Tensor(X), dim=0))
             self.X_min, self.idx  = (torch.min(torch.Tensor(X), dim=0))
             #del self.idx
@@ -251,31 +265,31 @@ class NNEmulator:
         losses_vali = []
         loss = 100.
         
-        tmp_dv_max        = self.dv_max.to(self.device).double()
-        tmp_dv_mean       = self.dv_mean.to(self.device).double()
-        tmp_dv_std        = self.dv_std.to(self.device).double()
-        tmp_cov           = self.cov.to(self.device).double()
-        tmp_cov_inv       = self.cov_inv.to(self.device).double()
-        tmp_X_mean        = self.X_mean.to(self.device).double()
-        tmp_X_std         = self.X_std.to(self.device).double()
-        tmp_X_max         = self.X_max.to(self.device).double()
-        tmp_X_min         = self.X_min.to(self.device).double()
-        tmp_X_validation  = X_validation.to(self.device).double()
-        tmp_Y_validation  = y_validation.to(self.device).double()
-        tmp_L_inv            = self.L_inv.to(self.device).double() # in the new basis where Cov = QLQ^(-1)
+        tmp_dv_max        = self.dv_max.to(self.device).float()
+        tmp_dv_mean       = self.dv_mean.to(self.device).float()
+        tmp_dv_std        = self.dv_std.to(self.device).float()
+        tmp_cov           = self.cov.to(self.device).float()
+        tmp_cov_inv       = self.cov_inv.to(self.device).float()
+        tmp_X_mean        = self.X_mean.to(self.device).float()
+        tmp_X_std         = self.X_std.to(self.device).float()
+        tmp_X_max         = self.X_max.to(self.device).float()
+        tmp_X_min         = self.X_min.to(self.device).float()
+        tmp_X_validation  = X_validation.to(self.device).float()
+        tmp_Y_validation  = y_validation.to(self.device).float()
+        tmp_L_inv            = self.L_inv.to(self.device).float() # in the new basis where Cov = QLQ^(-1)
 
-        #X_train     = ((X.double() - self.X_mean)/self.X_std)
-        #X_train     = ((X.double() - self.X_min)/(self.X_max - self.X_min))
-        X_train     = X.double()
+        #X_train     = ((X.float() - self.X_mean)/self.X_std)
+        #X_train     = ((X.float() - self.X_min)/(self.X_max - self.X_min))
+        X_train     = X.float()
         y_train     = y
         trainset    = torch.utils.data.TensorDataset(X_train, y_train)
         trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=1)
 
         for epoch in epoch_range:
             for i, data in enumerate(trainloader):
-                X       = data[0].to(self.device).double()         
-                X_norm  = ((data[0]- self.X_min)/(self.X_max - self.X_min)).to(self.device).double() # This is input
-                Y_batch = data[1].to(self.device).double()         
+                X       = data[0].to(self.device).float()         
+                X_norm  = ((data[0]- self.X_min)/(self.X_max - self.X_min)).to(self.device).float() # This is input
+                Y_batch = data[1].to(self.device).float()         
                                                 # This is label
                 Y_pred  = self.model.train()(X_norm) * tmp_dv_std #technically should add y_fid back, back loss=chi2 is the difference so they are the same
                 
@@ -327,17 +341,17 @@ class NNEmulator:
 
         np.savetxt("losses.txt", [losses_train,losses_vali], fmt='%s')
         #save last dv from validation just for plotting
-        np.savetxt("test_dv.txt", np.array( [tmp_Y_validation.cpu().detach().numpy().astype(np.float64)[-1], Y_pred.cpu().detach().numpy().astype(np.float64)[-1] ]), fmt='%s')
+        np.savetxt("test_dv.txt", np.array( [tmp_Y_validation.cpu().detach().numpy().astype(np.float32)[-1], Y_pred.cpu().detach().numpy().astype(np.float32)[-1] ]), fmt='%s')
         self.trained = True
 
     def predict(self, X):
         assert self.trained, "The emulator needs to be trained first before predicting"
 
         with torch.no_grad():
-            X_mean = self.X_mean.clone().detach().to(self.device).double()
-            X_std  = self.X_std.clone().detach().to(self.device).double()
-            X_max  = self.X_max.clone().detach().to(self.device).double()
-            X_min  = self.X_min.clone().detach().to(self.device).double()
+            X_mean = self.X_mean.clone().detach().to(self.device).float()
+            X_std  = self.X_std.clone().detach().to(self.device).float()
+            X_max  = self.X_max.clone().detach().to(self.device).float()
+            X_min  = self.X_min.clone().detach().to(self.device).float()
 
             #=== mean/std normalization
             # X_norm = (X.to(self.device) - X_mean) / X_std
@@ -346,10 +360,10 @@ class NNEmulator:
             X_norm = (X.to(self.device) - X_min) / (X_max - X_min)
             X_norm = np.reshape(X_norm, (1, len(X_norm)))
 
-            y_pred = self.model.eval()(X_norm).double().cpu() * self.dv_std #normalization
+            y_pred = self.model.eval()(X_norm).float().cpu() * self.dv_std #normalization
 
         y_pred = y_pred @ torch.Tensor(np.transpose(self.evecs)) + self.dv_mean #change of basis
-        return y_pred.double().numpy()
+        return y_pred.float().numpy()
 
 
     def save(self, filename):
@@ -374,17 +388,17 @@ class NNEmulator:
         ###
         print("Model summary:", summary(self.model))
         with h5.File(filename + '.h5', 'r') as f:
-            self.X_mean  = torch.Tensor(f['X_mean'][:]).double()
-            self.X_std   = torch.Tensor(f['X_std'][:]).double()
-            self.X_max   = torch.Tensor(f['X_max'][:]).double()
-            self.X_min   = torch.Tensor(f['X_min'][:]).double()
-            self.dv_fid  = torch.Tensor(f['dv_fid'][:]).double()
-            self.dv_std  = torch.Tensor(f['dv_std'][:]).double()
-            self.dv_max  = torch.Tensor(f['dv_max'][:]).double()
-            self.dv_mean = torch.Tensor(f['dv_mean'][:]).double()
-            self.cov     = torch.Tensor(f['cov'][:]).double()
-            self.evecs   = torch.Tensor(f['evecs'][:]).double()
-            self.evecs_inv  = torch.Tensor(f['evecs_inv'][:]).double()
+            self.X_mean  = torch.Tensor(f['X_mean'][:]).float()
+            self.X_std   = torch.Tensor(f['X_std'][:]).float()
+            self.X_max   = torch.Tensor(f['X_max'][:]).float()
+            self.X_min   = torch.Tensor(f['X_min'][:]).float()
+            self.dv_fid  = torch.Tensor(f['dv_fid'][:]).float()
+            self.dv_std  = torch.Tensor(f['dv_std'][:]).float()
+            self.dv_max  = torch.Tensor(f['dv_max'][:]).float()
+            self.dv_mean = torch.Tensor(f['dv_mean'][:]).float()
+            self.cov     = torch.Tensor(f['cov'][:]).float()
+            self.evecs   = torch.Tensor(f['evecs'][:]).float()
+            self.evecs_inv  = torch.Tensor(f['evecs_inv'][:]).float()
 
 
 

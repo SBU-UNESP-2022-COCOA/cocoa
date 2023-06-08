@@ -11,11 +11,11 @@ debug=False
 
 configfile =  "./projects/lsst_y1/train_emulator_wcdm_3x2.yaml"
 config = Config(configfile)
-# nn_model = "Transformer"
-# nn_model = "resnet"
-nn_model = "simply_connected"
+nn_model = "Transformer"
+#nn_model = "resnet"
+#nn_model = "simply_connected"
 
-# # # Training set 2000k
+# # # Training set 2M
 # file1                = "./projects/lsst_y1/emulator_output_3x2_wcdm/lhs/dvs_for_training_2000k/train_1"
 # file2                = "./projects/lsst_y1/emulator_output_3x2_wcdm/lhs/dvs_for_training_2000k/train_2"
 # file3                = "./projects/lsst_y1/emulator_output_3x2_wcdm/lhs/dvs_for_training_2000k/train_3"
@@ -31,43 +31,39 @@ nn_model = "simply_connected"
 # train_samples        = np.vstack((train_samples, train_samples_2,train_samples_3,train_samples_4))
 # train_data_vectors   = np.vstack((train_data_vectors, train_data_vectors_2,train_data_vectors_3,train_data_vectors_4))
 
-# # Training set 1000k
-# file1                = "./projects/lsst_y1/emulator_output_3x2_wcdm/lhs/dvs_for_training_1000k/train_1"
-# file2                = "./projects/lsst_y1/emulator_output_3x2_wcdm/lhs/dvs_for_training_1000k/train_2"
-# train_samples        = np.load(file1+'_samples.npy')#.append(np.load(file+'_samples_0.npy'))
-# train_data_vectors   = np.load(file1+'_data_vectors.npy')#.append(np.load(file+'_data_vectors_0.npy'))
-# train_samples_2      = np.load(file2+'_samples.npy')#.append(np.load(file+'_samples_0.npy'))
-# train_data_vectors_2 = np.load(file2+'_data_vectors.npy')#.append(np.load(file+'_data_vectors_0.npy'))
-# train_samples        = np.vstack((train_samples, train_samples_2))
-# train_data_vectors   = np.vstack((train_data_vectors, train_data_vectors_2))
+# # Training set 1M
+file1                = "./projects/lsst_y1/emulator_output_3x2_wcdm/lhs/dvs_for_training_1M/data/train_1"
+file2                = "./projects/lsst_y1/emulator_output_3x2_wcdm/lhs/dvs_for_training_1M/data/train_2"
+train_samples        = np.load(file1+'_samples.npy')#.append(np.load(file+'_samples_0.npy'))
+train_data_vectors   = np.load(file1+'_data_vectors.npy')#.append(np.load(file+'_data_vectors_0.npy'))
+train_samples_2      = np.load(file2+'_samples.npy')#.append(np.load(file+'_samples_0.npy'))
+train_data_vectors_2 = np.load(file2+'_data_vectors.npy')#.append(np.load(file+'_data_vectors_0.npy'))
+train_samples        = np.vstack((train_samples, train_samples_2))
+train_data_vectors   = np.vstack((train_data_vectors, train_data_vectors_2))
+
+
 
 # # Training set 5M!
-file_number = np.range(1,13)
-print(file_number)
-train_samples      = []
-train_data_vectors = []
-for i in file_number:
-    file                 = "./projects/lsst_y1/emulator_output_3x2_wcdm/lhs/dvs_for_training_5M/train_"+str(i)
-    tmp_samples          = np.load(file+'_samples.npy')#.append(np.load(file+'_samples_0.npy'))
-    tmp_data_vectors     = np.load(file+'_data_vectors.npy')#.append(np.load(file+'_data_vectors_0.npy'))
-    train_samples        = np.vstack((train_samples, tmp_samples))
-    train_data_vectors   = np.vstack((train_data_vectors, tmp_data_vectors))
+# file_number = range(1,13)
+# print(file_number)
+# train_samples      = []
+# train_data_vectors = []
+# for i in file_number:
+#     file                 = "./projects/lsst_y1/emulator_output_3x2_wcdm/lhs/dvs_for_training_5M/data/train_"+str(i)
+#     tmp_samples          = np.load(file+'_samples.npy', allow_pickle=True).astype(np.float32)
+#     tmp_data_vectors     = np.load(file+'_data_vectors.npy', allow_pickle=True).astype(np.float32)
+#     train_samples.append(tmp_samples)
+#     train_data_vectors.append(tmp_data_vectors)
+# train_samples = np.vstack(train_samples)
+# train_data_vectors = np.vstack(train_data_vectors)
 
 
-print("testing", np.shape(train_samples), np.shape(train_data_vectors))
-quit()
-
+print("TESTING", np.shape(train_data_vectors))
 ##3x2 setting; Not separate cosmic shear and 2x2pt
 BIN_SIZE   = 1560 # number of angular bins in each z-bin
 BIN_NUMBER = 1 # number of z-bins
 
-vali_path = "./projects/lsst_y1/emulator_output_3x2_wcdm/lhs/dvs_for_validation_10k/validation"
-
-### CONCATENATE TRAINING DATA
-#train_samples = []
-#train_data_vectors = []
-
-#for file in train_samples_files:
+vali_path = "./projects/lsst_y1/emulator_output_3x2_wcdm/lhs/dvs_for_validation_5k/validation"
 
 if debug:
     print('(debug)')
@@ -75,10 +71,6 @@ if debug:
     #print(train_samples[0])
     #print(train_data_vectors[0])
     print('(end debug)')
-
-#train_samples = np.array([subsubarr for subarr in train_samples for subsubarr in subarr])#train_samples_file1
-#train_data_vectors = np.array([subsubarr for subarr in train_data_vectors for subsubarr in subarr])#train_data_vectors_file1
-###
 
 # this script do the same thing for as train_emulator.py, but instead calculate the data_vactors for training, a set of
 
@@ -162,12 +154,33 @@ else:
 
 print('Using device: ',device)
 
+
+# ###
+# print('testing')
+# train_data_vectors = train_data_vectors[:,0:780]
+# train_samples = train_samples[:,0:15]
+# BIN_SIZE = 780
+# validation_data_vectors = validation_data_vectors[:,0:780]
+# validation_samples = validation_samples[:,0:15]
+
+# dv_mean = [0:780]
+# ###
+
+
+print("TESTING to train 2x2 only")
+BIN_SIZE   = 780 # number of angular bins in each z-bin
+BIN_NUMBER = 2 # number of z-bins
 for i in range(BIN_NUMBER):
+
+    print("TESTING")
+    # i=1
 
     start_idx = i*BIN_SIZE
     end_idx   = start_idx + BIN_SIZE
 
     print("TRAINING 3x2 directly")
+
+
 
     train_data_vectors      = train_data_vectors[:,start_idx:end_idx]
     validation_data_vectors = validation_data_vectors[:,start_idx:end_idx]
@@ -183,6 +196,7 @@ for i in range(BIN_NUMBER):
     evecs = eigensys[1]
     #change of basis
     tmp = np.array([dv_mean for _ in range(len(train_data_vectors))])
+    print("TESING2", tmp.dtype, train_data_vectors.dtype)
     train_data_vectors = np.transpose((np.linalg.inv(evecs) @ np.transpose(train_data_vectors - tmp)))#[pc_idxs])
     tmp = np.array([dv_mean for _ in range(len(validation_data_vectors))])
     validation_data_vectors = np.transpose((np.linalg.inv(evecs) @ np.transpose(validation_data_vectors - tmp)))#[pc_idxs])
