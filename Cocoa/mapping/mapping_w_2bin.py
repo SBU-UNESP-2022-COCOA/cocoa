@@ -174,4 +174,4 @@ for i in range(len(logA)):
 ### Finalize
 end_time = time.time()
 print("Minutes used: ",(end_time - start_time)/60 )
-np.savetxt('./mapping/mapping_w2bin_'+str(job_idx)+'.txt', np.transpose([w0, w1, w2, w3, omm_geo, omm_growth, logA_mini, ns_mini]), fmt='%f')
+np.savetxt('./mapping/data/w2bin/mapping_w2bin_'+str(job_idx)+'.txt', np.transpose([w0, w1, w2, w3, omm_geo, omm_growth, logA_mini, ns_mini]), fmt='%f')

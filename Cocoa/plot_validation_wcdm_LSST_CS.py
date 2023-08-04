@@ -12,6 +12,7 @@ from cocoa_emu.sampling import EmuSampler
 torch.set_default_dtype(torch.double)
 
 model_path = 'projects/lsst_y1/emulator_output_cs_wcdm/models/model_'
+model_path = 'projects/lsst_y1/emulator_output_3x2_wcdm/models/model_3x2' # test
 
 OUTPUT_DIM = 780
 BIN_SIZE   = 26 # number of angular bins in each z-bin
@@ -21,19 +22,13 @@ BIN_NUMBER = 30 # number of z-bins
 BIN_SIZE   = 780 # number of angular bins in each z-bin
 BIN_NUMBER = 1 # number of z-bins
 
-# def get_chi2(theta, dv_exact, mask, cov_inv_masked):
-#     if(config.emu_type=='nn'):
-#         theta = torch.Tensor(theta)
-#     elif(config.emu_type=='gp'):
-#         theta = theta[np.newaxis]
+samples_validation = np.load('./projects/lsst_y1/emulator_output_3x2_wcdm/lhs/dvs_for_validation_5k/validation_samples.npy')
+dv_validation      = np.load('./projects/lsst_y1/emulator_output_3x2_wcdm/lhs/dvs_for_validation_5k/validation_data_vectors.npy')
 
-#     dv_emu = emu.predict(theta)[0]
-#     delta_dv = (dv_emu - np.float32(dv_exact) )[mask]
-#     ## GPU emulators works well with float32
-#     chi2 = np.matmul( np.matmul(np.transpose(delta_dv), np.float32(cov_inv_masked)) , delta_dv  )   
-#     #print(dv_emu.dtype, np.float32(dv_exact).dtype, config.masked_inv_cov.dtype) 
-#     #print(np.float32(dv_exact))
-#     return chi2
+print("TESTING")
+samples_validation = samples_validation[:,0:15]
+dv_validation      = dv_validation[:,0:780]
+
 
 def get_chi2(dv_predict, dv_exact, mask, cov_inv):
 
@@ -50,13 +45,6 @@ configfile = './projects/lsst_y1/train_emulator_wcdm_cs.yaml'
 config = Config(configfile)
 
 
-samples_validation = np.load('./projects/lsst_y1/emulator_output_cs_wcdm/emu_validation/lhs/dvs_for_validation/validation_samples.npy')
-dv_validation      = np.load('./projects/lsst_y1/emulator_output_cs_wcdm/emu_validation/lhs/dvs_for_validation/validation_data_vectors.npy')
-
-# samples_validation = np.load('./projects/lsst_y1/emulator_output_cs_wcdm/emu_validation/lhs/dvs_for_test/test_samples.npy')
-# dv_validation      = np.load('./projects/lsst_y1/emulator_output_cs_wcdm/emu_validation/lhs/dvs_for_test/test_data_vectors.npy')
-
-print(np.shape(dv_validation), dv_validation[-1][779:781])
 
 if config.probe =='cosmic_shear':
     dv_validation = dv_validation[:,:OUTPUT_DIM]
@@ -183,7 +171,7 @@ end_idx   = 0
 for i in range(BIN_NUMBER):
     device='cpu'
     emu = NNEmulator(config.n_dim, BIN_SIZE, config.dv_fid, config.dv_std, cov, config.dv_fid, config.dv_fid, config.lhs_minmax ,device) #should privde dv_max instead of dv_fid, but emu.load will make it correct
-    emu.load(model_path + str(i+1), map_location=torch.device('cpu'))
+    emu.load(model_path , map_location=torch.device('cpu'))
     print('emulator loaded', i+1)
     tmp = []
     for j in range(len(samples_validation)):
@@ -252,13 +240,13 @@ plt.figure().clear()
 # plt.xlabel(r'$w^{\rm geo}$')
 # plt.ylabel(r'$w^{\rm growth}$')
 
-# plt.scatter(IA_1, IA_2, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap,norm=matplotlib.colors.LogNorm())
-# plt.xlabel(r'IA1')
-# plt.ylabel(r'IA2')
+plt.scatter(IA_1, IA_2, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap,norm=matplotlib.colors.LogNorm())
+plt.xlabel(r'IA1')
+plt.ylabel(r'IA2')
 
-plt.scatter(wgrowth, Omegam_growth, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap,norm=matplotlib.colors.LogNorm())
-plt.xlabel(r'$w^{\rm growth}$')
-plt.ylabel(r'$\Omega_m^{\rm growth}$')
+# plt.scatter(wgrowth, Omegam_growth, c=chi2_list, label=r'$\chi^2$ between emulator and cocoa', s = 2, cmap=cmap,norm=matplotlib.colors.LogNorm())
+# plt.xlabel(r'$w^{\rm growth}$')
+# plt.ylabel(r'$\Omega_m^{\rm growth}$')
 
 
 cb = plt.colorbar()

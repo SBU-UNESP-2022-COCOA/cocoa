@@ -1,7 +1,7 @@
 import sys,os
 import numpy as np
 import pynolh
-from pyDOE import lhs
+from pyDOE2 import lhs
 
 sys.path.insert(0, os.path.abspath(".."))
 
@@ -29,6 +29,12 @@ n_split = 2
 lhs_params = get_lhs_samples(config.n_dim, config.n_lhs, config.lhs_minmax)
 print("dim of parameter space for training:", config.n_dim)
 print("checking train sample shape: ", np.shape(lhs_params))
+
+print(lhs_params[0:2], "\n")
+
+print(type(lhs_params), type(lhs_params[0]), type(config.lhs_minmax))
+quit()
+
 
 try:
     os.makedirs(config.savedir)

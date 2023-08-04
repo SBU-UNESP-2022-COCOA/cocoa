@@ -9,26 +9,46 @@ from cocoa_emu import NNEmulator
 
 debug=False
 
-configfile = sys.argv[1]
+configfile = "./projects/lsst_y1/train_emulator_3x2.yaml"
 config = Config(configfile)
+savedir = config.savedir
 
-# Training set
-train_samples_files = sys.argv[2]
-file = sys.argv[2]
-
-##3x2 setting; separate cosmic shear and 2x2pt
+##2x2 setting; separate cosmic shear and 2x2pt
 BIN_SIZE   = 780 # number of angular bins in each z-bin
 BIN_NUMBER = 2 # number of z-bins
 
-vali_path = "./projects/lsst_y1/emulator_output_3x2/lhs/dvs_for_validation_10k/validation"
+### Training set
+files = ["./projects/lsst_y1/emulator_output_3x2/lhs/dvs_for_training_1M/train", #LHS ~1M
+         "./projects/lsst_y1/emulator_output_3x2/random/train_1",  #Random-1 (~0.7M)
+         "./projects/lsst_y1/emulator_output_3x2/random/train_2",  #Random-2 (~0.7M)
+         #"./projects/lsst_y1/emulator_output_3x2/random/train_3", #Random-3 (~0.7M)
+         #"./projects/lsst_y1/emulator_output_3x2/random/train_4", #Random-4 (~0.7M)
+         #"./projects/lsst_y1/emulator_output_3x2/random/train_5", #Random-5 (~0.7M)
+         #"./projects/lsst_y1/emulator_output_3x2/random/train_6", #Random-6 (~0.7M)
+         #"./projects/lsst_y1/emulator_output_3x2/random/train_7", #Random-7 (~0.7M)
+        ]
+train_samples      = []
+train_data_vectors = []
+for file in files:
+    train_samples.append(np.load(file+'_samples.npy').astype(np.float32))
+    train_data_vectors.append(np.load(file+'_data_vectors.npy').astype(np.float32))
+train_samples = np.vstack(train_samples)
+train_data_vectors = np.vstack(train_data_vectors)
 
-### CONCATENATE TRAINING DATA
-#train_samples = []
-#train_data_vectors = []
+### Validation set
+# Random
+validation_samples =      np.load('./projects/lsst_y1/emulator_output_3x2/random/validation_samples.npy').astype(np.float32)
+validation_data_vectors = np.load('./projects/lsst_y1/emulator_output_3x2/random/validation_data_vectors.npy').astype(np.float32)
 
-#for file in train_samples_files:
-train_samples=np.load(file+'_samples.npy')#.append(np.load(file+'_samples_0.npy'))
-train_data_vectors=np.load(file+'_data_vectors.npy')#.append(np.load(file+'_data_vectors_0.npy'))
+### Select NN model
+# nn_model = "Transformer"
+# savedir = savedir+"Transformer/8M"
+nn_model = "resnet"
+savedir = savedir+"ResNet"
+# nn_model = "simply_connected"
+# savedir = savedir+"MLP/8M"
+###
+
 if debug:
     print('(debug)')
     print('lhs')
@@ -113,10 +133,6 @@ if len(sys.argv) > 3:
 
 print("Total samples enter the training: ", len(train_samples))
 
-###============= Setting up validation set ============
-validation_samples =      np.load(vali_path + '_samples.npy')
-validation_data_vectors = np.load(vali_path + '_data_vectors.npy')[:,:OUTPUT_DIM]
-
 ###============= Normalize the data vectors for training; 
 ###============= used to be based on dv_max; but change to eigen-basis is better##
 dv_max = np.abs(train_data_vectors).max(axis=0)
@@ -186,10 +202,10 @@ for i in range(BIN_NUMBER):
 
     emu = NNEmulator(config.n_dim, OUTPUT_DIM, 
                         dv_fid, dv_std, cov, dv_max, dv_mean,config.lhs_minmax,
-                        device, model='resnet_small_LSST')
+                        device, model=nn_model)
     emu.train(TS, TDV, VS, VDV, batch_size=config.batch_size, n_epochs=config.n_epochs)
-    print("model saved to ",str(config.savedir))
-    emu.save(config.savedir + '/model_2x2')
+    print("model saved to ",str(savedir))
+    emu.save(savedir + '/model_2x2')
 
     print("2x2pt training done")
     break

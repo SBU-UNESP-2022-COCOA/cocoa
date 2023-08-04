@@ -74,56 +74,25 @@ class NNEmulator:
         elif(model=='resnet'):
             print("Using resnet model...")
             print("model output_dim: ", OUTPUT_DIM)
-            # self.model = nn.Sequential(
-            #         nn.Linear(N_DIM, 128),
-            #         ResBlock(128, 256),
-            #         nn.Dropout(self.dropout),
-            #         ResBlock(256, 256),
-            #         nn.Dropout(self.dropout),
-            #         ResBlock(256, 256),
-            #         nn.Dropout(self.dropout),
-            #         ResBlock(256, 512),
-            #         nn.Dropout(self.dropout),
-            #         ResBlock(512, 512),
-            #         nn.Dropout(self.dropout),
-            #         ResBlock(512, 512),
-            #         nn.Dropout(self.dropout),
-            #         ResBlock(512, 1024),
-            #         nn.Dropout(self.dropout),
-            #         ResBlock(1024, 1024),
-            #         nn.Dropout(self.dropout),
-            #         ResBlock(1024, 1024),
-            #         nn.Dropout(self.dropout),
-            #         ResBlock(1024, 1024),
-            #         nn.Dropout(self.dropout),
-            #         ResBlock(1024, 1024),
-            #         Affine(),
-            #         nn.PReLU(),
-            #         nn.Linear(1024, OUTPUT_DIM),
-            #         Affine()
-            #     )
-            # self.model = nn.Sequential(
-            #     nn.Linear(N_DIM, 512),
-            #     ResBlock(512, 1024),
-            #     nn.Dropout(self.dropout),
-            #     nn.PReLU(),
-            #     nn.Linear(1024, OUTPUT_DIM),
-            #     Affine()
-            #     )
             self.model = nn.Sequential(
                 nn.Linear(N_DIM, 512),
                 ResBlock(512, 1024),
                 nn.Dropout(self.dropout),
                 nn.PReLU(),
-                ResBlock(1024, 1024),
-                nn.Dropout(self.dropout),
-                nn.PReLU(),
-                ResBlock(1024, 1024),
-                nn.Dropout(self.dropout),
-                nn.PReLU(),
                 nn.Linear(1024, OUTPUT_DIM),
                 Affine()
                 )
+            # self.model = nn.Sequential(
+            #     nn.Linear(N_DIM, 512),
+            #     ResBlock(512, 1024),
+            #     nn.Dropout(self.dropout),
+            #     nn.PReLU(),
+            #     ResBlock(1024, 1024),
+            #     nn.Dropout(self.dropout),
+            #     nn.PReLU(),
+            #     nn.Linear(1024, OUTPUT_DIM),
+            #     Affine()
+            #     )
 
         elif(model=='resnet_small_LSST'):
             print("Using resnet_samll_LSST model...")
@@ -176,10 +145,10 @@ class NNEmulator:
             print("model output_dim: ", OUTPUT_DIM)
 
 
-            input_dim = 128 #128
-            emb_dim   = 16
+            input_dim = 200 #128
+            emb_dim   = 30
             head_number = 1
-            transblock_number = 1
+            transblock_number = 3
             ff_hidden_mult = 1
             print("Transformer summary; \
                    input_dim = {%d}, embedding dim = {%d}, \
@@ -189,11 +158,12 @@ class NNEmulator:
                 Expand2D(input_dim,emb_dim), # input_dim, emb
                 nn.PReLU(),
                 TransformerBlock(emb_dim,head_number,False,ff_hidden_mult), # emb; heads; mask
+                TransformerBlock(emb_dim,head_number,False,ff_hidden_mult), # emb; heads; mask
+                TransformerBlock(emb_dim,head_number,False,ff_hidden_mult), # emb; heads; mask
                 Squeeze(input_dim,emb_dim),
                 nn.Linear(input_dim*emb_dim, OUTPUT_DIM),
                 Affine()
             )
-
 
             # # Try Evan's implementation
             # N_layers     = 1

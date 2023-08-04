@@ -15,5 +15,9 @@ is_dynamical: True
 nlive_init: 500
 nlive_batch: 100
 
+# sampling method supported by dynesty: uniform sampling, random walks, sampling_method, Hamiltonian slice sampling
+# KZ: I'm a bit confused about the documentation... please refer to paper and github repo
+sampling_method: rslice
+
 #argment control whether to focus on posterior of evidnece. 1==100% posterior; 0==100% evidence
 posterior_evidence_ratio: 0.0

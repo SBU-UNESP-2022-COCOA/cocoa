@@ -21,7 +21,7 @@ w0wa_chains_root    = "./projects/lsst_y1/chains/base_w_wa_plikHM_TTTEEE_lowl_lo
 ggsplit_yaml_file   = "./projects/lsst_y1/EXAMPLE_MCMC514.yaml"
 ggsplit_chains_root = "./projects/lsst_y1/chains/EXAMPLE_MCMC514"
 
-num_points_thin = 5000
+num_points_thin = 2000
 analysissettings={'smooth_scale_1D':0.35,'smooth_scale_2D':0.35,'ignore_rows': u'0.5',
 'range_confidence' : u'0.005'}
 
@@ -159,4 +159,4 @@ for i in range(len(logA)):
 ### Finalize
 end_time = time.time()
 print("Minutes used: ",(end_time - start_time)/60 )
-np.savetxt('./mapping/mapping_w0wa_'+str(job_idx)+'.txt', np.transpose([w0, wa, omm_geo, omm_growth]), fmt='%f')
+np.savetxt('./mapping/data/w0wa/mapping_w0wa_'+str(job_idx)+'.txt', np.transpose([w0, wa, omm_geo, omm_growth]), fmt='%f')

@@ -15,11 +15,20 @@ params = {'legend.fontsize': 28,
          'ytick.labelsize':24}
 pylab.rcParams.update(params)
 
+end_idx = 35
+models = ["lcdm", "w0wa", "w2bin", "w2bin_RT"]
+for model in models:
+    with open("./mapping/data/"+model+"/mapping_"+model+"_0_"+str(end_idx)+".txt",'w') as output:
+        for i in range(end_idx+1):
+            with open("./mapping/data/"+model+"/mapping_"+model+"_"+str(i)+".txt",'r') as input:
+                for line in input:
+                    output.write(line)
+    samples = np.loadtxt("./mapping/data/"+model+"/mapping_"+model+"_0_"+str(end_idx)+".txt")
 
-samples_lcdm = np.loadtxt("./mapping/data/lcdm_planck/mapping_lcdm_0_19.txt")
-samples_w0wa = np.loadtxt("./mapping/data/w0wa_planck_BAO_SN/mapping_w0wa_0_35.txt")
+samples_lcdm = np.loadtxt("./mapping/data/lcdm/mapping_lcdm_0_35.txt")
+samples_w0wa = np.loadtxt("./mapping/data/w0wa/mapping_w0wa_0_35.txt")
 samples_w2bin = np.loadtxt("./mapping/data/w2bin/mapping_w2bin_0_35.txt")
-samples_w2bin_RT = np.loadtxt("./mapping/data/w2bin/mapping_w2bin_RT_0_35.txt")
+samples_w2bin_RT = np.loadtxt("./mapping/data/w2bin_RT/mapping_w2bin_RT_0_35.txt")
 
 omm_geo_1        = samples_lcdm[:,2]
 omm_growth_1     = samples_lcdm[:,3]

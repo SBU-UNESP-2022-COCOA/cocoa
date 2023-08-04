@@ -34,10 +34,10 @@ nn_model = "Transformer"
 # # Training set 1M
 file1                = "./projects/lsst_y1/emulator_output_3x2_wcdm/lhs/dvs_for_training_1M/data/train_1"
 file2                = "./projects/lsst_y1/emulator_output_3x2_wcdm/lhs/dvs_for_training_1M/data/train_2"
-train_samples        = np.load(file1+'_samples.npy')#.append(np.load(file+'_samples_0.npy'))
-train_data_vectors   = np.load(file1+'_data_vectors.npy')#.append(np.load(file+'_data_vectors_0.npy'))
-train_samples_2      = np.load(file2+'_samples.npy')#.append(np.load(file+'_samples_0.npy'))
-train_data_vectors_2 = np.load(file2+'_data_vectors.npy')#.append(np.load(file+'_data_vectors_0.npy'))
+train_samples        = np.load(file1+'_samples.npy').astype(np.float32)
+train_data_vectors   = np.load(file1+'_data_vectors.npy').astype(np.float32)
+train_samples_2      = np.load(file2+'_samples.npy').astype(np.float32)
+train_data_vectors_2 = np.load(file2+'_data_vectors.npy').astype(np.float32)
 train_samples        = np.vstack((train_samples, train_samples_2))
 train_data_vectors   = np.vstack((train_data_vectors, train_data_vectors_2))
 
@@ -135,8 +135,11 @@ validation_data_vectors = np.load(vali_path + '_data_vectors.npy')[:,:OUTPUT_DIM
 
 ###============= Normalize the data vectors for training; 
 ###============= used to be based on dv_max; but change to eigen-basis is better##
-dv_max = np.abs(train_data_vectors).max(axis=0)
+
+
+# dv_max = np.abs(train_data_vectors).max(axis=0)
 dv_mean = np.mean(train_data_vectors, axis=0)
+dv_max = dv_mean # don't really need dv_max now
 
 
 #====================chi2 cut for test dvs===========================
@@ -170,6 +173,9 @@ print('Using device: ',device)
 print("TESTING to train 2x2 only")
 BIN_SIZE   = 780 # number of angular bins in each z-bin
 BIN_NUMBER = 2 # number of z-bins
+validation_samples = validation_samples[:,0:15]
+train_samples = train_samples[:,0:15]
+config.n_dim = 15
 for i in range(BIN_NUMBER):
 
     print("TESTING")
@@ -192,11 +198,12 @@ for i in range(BIN_NUMBER):
     dv_mean                 = dv_mean[start_idx:end_idx]
     # do diagonalization C = QLQ^(T); Q is now change of basis matrix
     eigensys = np.linalg.eigh(cov)
-    evals = eigensys[0]
-    evecs = eigensys[1]
+    evals = eigensys[0].astype(np.float32)
+    evecs = eigensys[1].astype(np.float32)
     #change of basis
     tmp = np.array([dv_mean for _ in range(len(train_data_vectors))])
-    print("TESING2", tmp.dtype, train_data_vectors.dtype)
+    print("TESING2", tmp.dtype, train_data_vectors.dtype, evecs.dtype)
+
     train_data_vectors = np.transpose((np.linalg.inv(evecs) @ np.transpose(train_data_vectors - tmp)))#[pc_idxs])
     tmp = np.array([dv_mean for _ in range(len(validation_data_vectors))])
     validation_data_vectors = np.transpose((np.linalg.inv(evecs) @ np.transpose(validation_data_vectors - tmp)))#[pc_idxs])

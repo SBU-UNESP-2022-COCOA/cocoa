@@ -27,9 +27,9 @@ def signal_handler(signum, frame):
     interrupted = True
 
 start_minutes = time.time() / 60
-end_minutes = 60*7.95 ## 8 hours are usually maximum on seawulf, end the program at 7.9 hours to avoid losing everthing
-#end_minutes = 60*47.9 ## 48 hours are usually maximum on seawulf, end the program at 7.9 hours to avoid losing everthing
-#end_minutes = 60*11.95
+#end_minutes = 60*7.95 ## 8 hours are usually maximum on seawulf, end the program at 7.9 hours to avoid losing everthing
+#end_minutes = 60*47.95 ## 48 hours are usually maximum on seawulf, end the program at 7.9 hours to avoid losing everthing
+end_minutes = 60*11.95
 
 # ============= signal handler =============
 

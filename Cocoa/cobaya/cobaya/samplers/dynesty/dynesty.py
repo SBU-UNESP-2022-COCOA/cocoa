@@ -151,7 +151,7 @@ class dynesty(Sampler):
                 num_cores = int(os.environ.get("SLURM_CPUS_PER_TASK", 1))
                 with ThreadPoolExecutor(max_workers=num_cores) as executor:
                     sampler = dnt.NestedSampler(loglikelihood, self.prior_transform, self.nDims, 
-                                             nlive=self.nlive, sample='rslice',pool=executor,
+                                             nlive=self.nlive, sample=self.sampling_method,pool=executor,
                                                  rstate=self.rstate, queue_size=num_cores)
                     sampler.run_nested(dlogz=self.dlogz, print_progress=self.print_progress)
 
