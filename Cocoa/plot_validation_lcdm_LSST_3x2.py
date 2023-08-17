@@ -26,8 +26,13 @@ configfile              = './projects/lsst_y1/train_emulator_3x2.yaml'
 samples_validation_file = './projects/lsst_y1/emulator_output_3x2/random/validation_samples.npy'
 dv_validation_file      = './projects/lsst_y1/emulator_output_3x2/random/validation_data_vectors.npy'
 
-emu_model_cs  = 'projects/lsst_y1/emulator_output/modelsTransformer/8M/model_CS'
-emu_model_2x2 = 'projects/lsst_y1/emulator_output_3x2/modelsTransformer/model_2x2'
+emu_model_cs  = 'projects/lsst_y1/emulator_output/modelsTransformer/4M/model_CS'
+
+#emu_model_2x2 = 'projects/lsst_y1/emulator_output_3x2/modelsTransformer/model_2x2'; model_prefix = "Transformer"
+#emu_model_2x2 = 'projects/lsst_y1/emulator_output_3x2/modelsResNet/model_2x2'; model_prefix = "ResNet"
+#emu_model_2x2 = 'projects/lsst_y1/emulator_output_3x2/modelsMLP/model_2x2'; model_prefix = "MLP"
+
+emu_model_2x2 = 'projects/lsst_y1/emulator_output_3x2/modelsTransformer/2M/model_2x2'; model_prefix = "Transformer"
 
 #emu_model_3x2 = 'projects/lsst_y1/emulator_output_3x2/models/Transformer/model_3x2'
 
@@ -221,6 +226,8 @@ for i in range(len(dv_predict)):
 
 chi2_list = np.array(chi2_list)
 
+np.savetxt('chi2_list_3x2'+model_prefix+'.txt',chi2_list)
+
 #print("testing",chi2_list)
 print("average chi2 is: ", np.average(chi2_list))
 print("Warning: This can be different from the training-validation loss. It depends on the mask file you use.")
@@ -253,10 +260,10 @@ plt.scatter(logA, Omegam, c=chi2_list, label=r'$\chi^2$ between emulator and coc
 plt.xlabel(r'$\log A$')
 plt.ylabel(r'$\Omega_m$')
 
+np.savetxt("chi2_distribution_3x2"+model_prefix+'.txt',[logA, Omegam, chi2_list],header="logA,Omegam, chi2_list")
+
 cb = plt.colorbar()
-plt.legend()
-plt.title('Transformer')
-plt.savefig("validation_lcdm_LSST_3x2.pdf")
+plt.savefig("validation_lcdm_LSST_3x2_"+model_prefix+".pdf")
 
 #####PLOT 2d end######
 

@@ -385,3 +385,63 @@ class TransformerBlock_NN(nn.Module):
         src = src + self.dropout2(src2)
         src = self.norm2(src)
         return src
+
+# 1D-CNN test
+class CNN1D(nn.Module):
+    def __init__(self, in_size, out_size, kernel_size=3):
+        super(CNN1D, self).__init__()
+
+        self.layer1 = nn.Conv1d(in_size, out_size, kernel_size, stride=1)
+        self.act1   = nn.Tanh()
+    def forward(self, x):
+        # Reshape for 1D convolution
+        x = x.view(x.size(0), 1, -1)
+        x = self.layer1(x)
+        return self.act1(x)
+
+class Simple1DCNN(nn.Module):
+    def __init__(self, in_size, out_size):
+        super(Simple1DCNN, self).__init__()
+        
+        # Input linear transformation
+        self.input_layer = nn.Linear(in_size, 300) #n_in = linear transform cosmological parameters to a longer tensor
+        
+        # 1D Convolution layers
+        self.conv1 = nn.Conv1d(in_channels=1, out_channels=32, kernel_size=5)
+        self.conv2 = nn.Conv1d(in_channels=32, out_channels=64, kernel_size=5)
+        self.conv3 = nn.Conv1d(in_channels=64, out_channels=128, kernel_size=5)
+        
+        # You might need to adjust the size here based on the exact architecture.
+        # This number (128*86) depends on the lengths of your sequences after each convolution.
+        # input of this layer is 128*N, where N = (( (n_in - 4)/2-4 ) / 2 -4 )/2
+        # First minus the (kernel-1) for convolv dim reduction; then devide by kernel size of pool layer
+        self.fc1 = nn.Linear(128 * 34, 1024)  
+        self.fc2 = nn.Linear(1024, out_size)
+        
+        self.relu = nn.ReLU()
+        self.pool = nn.MaxPool1d(kernel_size=2, stride=2)
+        
+    def forward(self, x):
+        # Expanding input dimensions
+        #x = self.relu(self.input_layer(x)) # with act
+        x = self.input_layer(x) # without act, just linear transform
+        # Reshape for 1D convolution
+        x = x.view(x.size(0), 1, -1)
+        
+        # 1D Convolutions
+        x = self.relu(self.conv1(x))
+        x = self.pool(x)
+        x = self.relu(self.conv2(x))
+        x = self.pool(x)
+        x = self.relu(self.conv3(x))
+        x = self.pool(x)
+        
+        # Flattening the tensor
+        x = x.view(x.size(0), -1)
+        
+        # Fully connected layers
+        x = self.relu(self.fc1(x))
+        x = self.fc2(x)
+        
+        return x
+

@@ -21,7 +21,7 @@ BIN_NUMBER = 2 # number of z-bins
 files = ["./projects/lsst_y1/emulator_output_3x2/lhs/dvs_for_training_1M/train", #LHS ~1M
          "./projects/lsst_y1/emulator_output_3x2/random/train_1",  #Random-1 (~0.7M)
          "./projects/lsst_y1/emulator_output_3x2/random/train_2",  #Random-2 (~0.7M)
-         #"./projects/lsst_y1/emulator_output_3x2/random/train_3", #Random-3 (~0.7M)
+         "./projects/lsst_y1/emulator_output_3x2/random/train_3",  #Random-3 (~0.7M)
          #"./projects/lsst_y1/emulator_output_3x2/random/train_4", #Random-4 (~0.7M)
          #"./projects/lsst_y1/emulator_output_3x2/random/train_5", #Random-5 (~0.7M)
          #"./projects/lsst_y1/emulator_output_3x2/random/train_6", #Random-6 (~0.7M)
@@ -35,19 +35,29 @@ for file in files:
 train_samples = np.vstack(train_samples)
 train_data_vectors = np.vstack(train_data_vectors)
 
+# TEST begin
+train_samples      = train_samples[0:2000000]
+train_data_vectors = train_data_vectors[0:2000000]
+# TEST end
+
 ### Validation set
 # Random
 validation_samples =      np.load('./projects/lsst_y1/emulator_output_3x2/random/validation_samples.npy').astype(np.float32)
 validation_data_vectors = np.load('./projects/lsst_y1/emulator_output_3x2/random/validation_data_vectors.npy').astype(np.float32)
 
 ### Select NN model
-# nn_model = "Transformer"
-# savedir = savedir+"Transformer/8M"
-nn_model = "resnet"
-savedir = savedir+"ResNet"
+nn_model = "Transformer_2x2pt"
+savedir = savedir+"Transformer/8M"
+# nn_model = "resnet"
+# savedir = savedir+"ResNet"
 # nn_model = "simply_connected"
 # savedir = savedir+"MLP/8M"
 ###
+
+## TEST start
+nn_model = "Simple_1D_CNN"
+savedir = savedir+"Simple_1D_CNN"
+## TEST end
 
 if debug:
     print('(debug)')
@@ -188,13 +198,13 @@ for i in range(BIN_NUMBER):
     validation_data_vectors = np.transpose((np.linalg.inv(evecs) @ np.transpose(validation_data_vectors - tmp)))#[pc_idxs])
 
 
-    TS = torch.Tensor(train_samples)
+    TS = torch.as_tensor(train_samples)
     #TS.to(device)
-    TDV = torch.Tensor(train_data_vectors)
+    TDV = torch.as_tensor(train_data_vectors)
     #TDV.to(device)
-    VS = torch.Tensor(validation_samples)
+    VS = torch.as_tensor(validation_samples)
     #VS.to(device)
-    VDV = torch.Tensor(validation_data_vectors)
+    VDV = torch.as_tensor(validation_data_vectors)
     #VDV.to(device)
 
     print("training with the following hyper paraters: batch_size = ", config.batch_size, 'n_epochs = ', config.n_epochs)
@@ -205,6 +215,10 @@ for i in range(BIN_NUMBER):
                         device, model=nn_model)
     emu.train(TS, TDV, VS, VDV, batch_size=config.batch_size, n_epochs=config.n_epochs)
     print("model saved to ",str(savedir))
+    try:
+        os.makedirs(savedir)
+    except FileExistsError:
+        pass
     emu.save(savedir + '/model_2x2')
 
     print("2x2pt training done")

@@ -13,7 +13,7 @@ configfile =  "./projects/lsst_y1/train_emulator_3x2.yaml"
 config = Config(configfile)
 
 # Training set
-file = "./projects/lsst_y1/emulator_output_3x2/lhs/dvs_for_training_800k/train"
+file = "./projects/lsst_y1/emulator_output_3x2/lhs/dvs_for_training_1M/train"
 train_samples=np.load(file+'_samples.npy')#.append(np.load(file+'_samples_0.npy'))
 train_data_vectors=np.load(file+'_data_vectors.npy')#.append(np.load(file+'_data_vectors_0.npy'))
 
@@ -21,10 +21,10 @@ train_data_vectors=np.load(file+'_data_vectors.npy')#.append(np.load(file+'_data
 BIN_SIZE   = 1560 # number of angular bins in each z-bin
 BIN_NUMBER = 1 # number of z-bins
 
-vali_path = "./projects/lsst_y1/emulator_output_3x2/lhs/dvs_for_validation_10k/validation"
+vali_path = "./projects/lsst_y1/emulator_output_3x2/random/validation"
 
 
-nn_model = "Transformer"
+nn_model = "1DCNN"#"Transformer"
 
 ### TEST start
 # nn_model = "resnet"

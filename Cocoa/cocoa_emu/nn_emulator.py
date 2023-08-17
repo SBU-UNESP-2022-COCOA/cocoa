@@ -22,19 +22,19 @@ class NNEmulator:
         self.trained = False
         self.model_type = model
         
-        self.dv_fid     = torch.Tensor(dv_fid)
-        self.dv_std     = torch.Tensor(dv_std)
-        self.cov        = torch.Tensor(cov)
-        self.cov_inv    = torch.Tensor(np.linalg.inv(cov))        
-        self.dv_max     = torch.Tensor(dv_max)
-        self.dv_mean    = torch.Tensor(dv_mean)
+        self.dv_fid     = torch.as_tensor(dv_fid)
+        self.dv_std     = torch.as_tensor(dv_std)
+        self.cov        = torch.as_tensor(cov)
+        self.cov_inv    = torch.as_tensor(np.linalg.inv(cov))        
+        self.dv_max     = torch.as_tensor(dv_max)
+        self.dv_mean    = torch.as_tensor(dv_mean)
         self.lhs_minmax = lhs_minmax
 
 
         #Need to use np.linalg.eigh instead of .eig for numerical stability
-        self.L_inv      = torch.Tensor(np.diag(1/np.linalg.eigh(self.cov)[0]))  # in the new basis where Cov = QLQ^(-1)
-        self.evecs      = torch.Tensor(np.linalg.eigh(self.cov)[1]) #this is Q
-        self.evecs_inv  = torch.Tensor(np.linalg.inv(np.linalg.eigh(self.cov)[1])) #save them to avoid doing eigen decomposition evertime of calling
+        self.L_inv      = torch.as_tensor(np.diag(1/np.linalg.eigh(self.cov)[0]))  # in the new basis where Cov = QLQ^(-1)
+        self.evecs      = torch.as_tensor(np.linalg.eigh(self.cov)[1]) #this is Q
+        self.evecs_inv  = torch.as_tensor(np.linalg.inv(np.linalg.eigh(self.cov)[1])) #save them to avoid doing eigen decomposition evertime of calling
 
         self.output_dim = OUTPUT_DIM
 
@@ -44,7 +44,7 @@ class NNEmulator:
         self.learningrate     = 5e-4
         self.reduce_lr        = True
         self.loss_vali_goal   = 0.05
-        self.gpu_parallel     = False
+        self.gpu_parallel     = True
         self.boundary_removal = False #Force points at the boundary of the box to have chi2=0
         
     
@@ -204,7 +204,47 @@ class NNEmulator:
             #     nn.Linear(input_dim*emb_dim, OUTPUT_DIM),
             #     Affine()
             # )
+        elif(model=='Transformer_2x2pt'):
+            print("Using Transformer")
+            print("model output_dim: ", OUTPUT_DIM)
 
+
+            input_dim = 250 #test 250?
+            emb_dim   = 35 #test 35?
+            head_number = 1
+            transblock_number = 3
+            ff_hidden_mult = 1
+            print("Transformer summary; \
+                   input_dim = {%d}, embedding dim = {%d}, \
+                   head number ={%d}, transblock_number = {%d}" %(input_dim,emb_dim,head_number,transblock_number))
+            self.model = nn.Sequential(
+                nn.Linear(N_DIM, input_dim),
+                Expand2D(input_dim,emb_dim), # input_dim, emb
+                nn.PReLU(),
+                TransformerBlock(emb_dim,head_number,False,ff_hidden_mult), # emb; heads; mask
+                TransformerBlock(emb_dim,head_number,False,ff_hidden_mult), # emb; heads; mask
+                TransformerBlock(emb_dim,head_number,False,ff_hidden_mult), # emb; heads; mask
+                Squeeze(input_dim,emb_dim),
+                nn.Linear(input_dim*emb_dim, OUTPUT_DIM),
+                Affine()
+            )
+        elif(model=='Simple_1D_CNN'):
+            print("Using Simple CNN---as a test case")
+            print("model output_dim: ", OUTPUT_DIM)
+
+            self.model = nn.Sequential(
+                Simple1DCNN(N_DIM, OUTPUT_DIM)
+            )
+        elif(model=='CNN_CS'):
+            print("STILL TESTING")
+            print("Using 1D CNN optimized for cosmic shear")
+            print("model output_dim: ", OUTPUT_DIM)
+
+            input_dim       = 100
+            kernel_size     = 5
+
+            self.model = nn.Sequential(
+            )
 
         
         ###use multi gpu with nn.DataParallel
@@ -214,17 +254,18 @@ class NNEmulator:
         self.model.to(self.device)
         self.model.to(torch.float32)
         if self.optim is None:
-            self.optim = torch.optim.Adam(self.model.parameters(), lr=self.learningrate)
+            #self.optim = torch.optim.Adam(self.model.parameters(), lr=self.learningrate) # original Adam
+            self.optim = torch.optim.AdamW(self.model.parameters(), lr=self.learningrate) # Adam with weight decay
         if self.reduce_lr == True:
             print('Reduce LR on plateu: ',self.reduce_lr)
             self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optim, 'min')
         
     def train(self, X, y, X_validation, y_validation, test_split=None, batch_size=32, n_epochs=100):
         if not self.trained:
-            self.X_mean = torch.Tensor(X.mean(axis=0, keepdims=True)).float()
-            self.X_std  = torch.Tensor(X.std(axis=0,  keepdims=True)).float()
-            self.X_max, self.idx  = (torch.max(torch.Tensor(X), dim=0))
-            self.X_min, self.idx  = (torch.min(torch.Tensor(X), dim=0))
+            self.X_mean = torch.as_tensor(X.mean(axis=0, keepdims=True)).float()
+            self.X_std  = torch.as_tensor(X.std(axis=0,  keepdims=True)).float()
+            self.X_max, self.idx  = (torch.max(torch.as_tensor(X), dim=0))
+            self.X_min, self.idx  = (torch.min(torch.as_tensor(X), dim=0))
             #del self.idx
         ###
         print("Model summary:", summary(self.model))
@@ -274,7 +315,7 @@ class NNEmulator:
                     boundary_mask= []
                     for k in range(len(X)):
                         boundary_mask.append(boundary_check(X[k], self.lhs_minmax, rg=0.1))
-                    boundary_mask = torch.Tensor(boundary_mask)==False #This gives False for those in the boundary. Opposite to the origional function
+                    boundary_mask = torch.as_tensor(boundary_mask)==False #This gives False for those in the boundary. Opposite to the origional function
                     
                     loss = torch.mean(torch.diagonal( torch.matmul( torch.matmul((Y_batch - Y_pred),tmp_L_inv), torch.t(Y_batch - Y_pred)) )[boundary_mask] )
                     loss = torch.nan_to_num(loss) # prevent nan, should not happen with reasonable training set
@@ -332,13 +373,16 @@ class NNEmulator:
 
             y_pred = self.model.eval()(X_norm).float().cpu() * self.dv_std #normalization
 
-        y_pred = y_pred @ torch.Tensor(np.transpose(self.evecs)) + self.dv_mean #change of basis
+        y_pred = y_pred @ torch.as_tensor(np.transpose(self.evecs)) + self.dv_mean #change of basis
         return y_pred.float().numpy()
 
 
     def save(self, filename):
         #NOTE KZ: when training with GPU-parallel, should only save the weights instead, then loading on cpu is easier.
-        torch.save(self.model, filename)
+        if self.gpu_parallel:
+            torch.save(self.model.module.state_dict(), filename)
+        else:
+            torch.save(self.model, filename)
         with h5.File(filename  + '.h5', 'w') as f:
             f['X_mean']        = self.X_mean
             f['X_std']         = self.X_std
@@ -358,17 +402,17 @@ class NNEmulator:
         ###
         print("Model summary:", summary(self.model))
         with h5.File(filename + '.h5', 'r') as f:
-            self.X_mean  = torch.Tensor(f['X_mean'][:]).float()
-            self.X_std   = torch.Tensor(f['X_std'][:]).float()
-            self.X_max   = torch.Tensor(f['X_max'][:]).float()
-            self.X_min   = torch.Tensor(f['X_min'][:]).float()
-            self.dv_fid  = torch.Tensor(f['dv_fid'][:]).float()
-            self.dv_std  = torch.Tensor(f['dv_std'][:]).float()
-            self.dv_max  = torch.Tensor(f['dv_max'][:]).float()
-            self.dv_mean = torch.Tensor(f['dv_mean'][:]).float()
-            self.cov     = torch.Tensor(f['cov'][:]).float()
-            self.evecs   = torch.Tensor(f['evecs'][:]).float()
-            self.evecs_inv  = torch.Tensor(f['evecs_inv'][:]).float()
+            self.X_mean  = torch.as_tensor(f['X_mean'][:]).float()
+            self.X_std   = torch.as_tensor(f['X_std'][:]).float()
+            self.X_max   = torch.as_tensor(f['X_max'][:]).float()
+            self.X_min   = torch.as_tensor(f['X_min'][:]).float()
+            self.dv_fid  = torch.as_tensor(f['dv_fid'][:]).float()
+            self.dv_std  = torch.as_tensor(f['dv_std'][:]).float()
+            self.dv_max  = torch.as_tensor(f['dv_max'][:]).float()
+            self.dv_mean = torch.as_tensor(f['dv_mean'][:]).float()
+            self.cov     = torch.as_tensor(f['cov'][:]).float()
+            self.evecs   = torch.as_tensor(f['evecs'][:]).float()
+            self.evecs_inv  = torch.as_tensor(f['evecs_inv'][:]).float()
 
 
 
