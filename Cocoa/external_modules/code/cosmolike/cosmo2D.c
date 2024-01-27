@@ -594,6 +594,7 @@ double w_gg_tomo(const int nt, const int ni, const int nj, const int limber)
     #pragma GCC diagnostic pop
     if (limber == 1)
     {
+      // printf("!!!!!!!!KZ TESTING: limber");
       #pragma omp parallel for collapse(2)
       for (int nz=0; nz<NSIZE; nz++)
       {
@@ -610,6 +611,7 @@ double w_gg_tomo(const int nt, const int ni, const int nj, const int limber)
     }
     else
     {
+      // printf("!!!!!!!!KZ TESTING: non-limber");
       for (int nz=0; nz<NSIZE; nz++) // NONLIMBER PART
       { 
         const int L = 1;

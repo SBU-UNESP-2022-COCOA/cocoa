@@ -410,38 +410,51 @@ class Simple1DCNN(nn.Module):
         self.conv1 = nn.Conv1d(in_channels=1, out_channels=32, kernel_size=5)
         self.conv2 = nn.Conv1d(in_channels=32, out_channels=64, kernel_size=5)
         self.conv3 = nn.Conv1d(in_channels=64, out_channels=128, kernel_size=5)
+        self.conv4 = nn.Conv1d(in_channels=128, out_channels=256, kernel_size=5)
         
         # You might need to adjust the size here based on the exact architecture.
         # This number (128*86) depends on the lengths of your sequences after each convolution.
         # input of this layer is 128*N, where N = (( (n_in - 4)/2-4 ) / 2 -4 )/2
         # First minus the (kernel-1) for convolv dim reduction; then devide by kernel size of pool layer
-        self.fc1 = nn.Linear(128 * 34, 1024)  
-        self.fc2 = nn.Linear(1024, out_size)
+        self.fc1 = nn.Linear(256 * 17, 1024)
+        self.fc2 = nn.Linear(1024, 1024) 
+        self.fc3 = nn.Linear(1024, 1024)  
+        self.fc4 = nn.Linear(1024, out_size)
         
-        self.relu = nn.ReLU()
+        self.act = nn.PReLU()
         self.pool = nn.MaxPool1d(kernel_size=2, stride=2)
+
+        self.skip = nn.Identity()
         
     def forward(self, x):
         # Expanding input dimensions
-        #x = self.relu(self.input_layer(x)) # with act
+        #x = self.act(self.input_layer(x)) # with act
         x = self.input_layer(x) # without act, just linear transform
         # Reshape for 1D convolution
         x = x.view(x.size(0), 1, -1)
         
         # 1D Convolutions
-        x = self.relu(self.conv1(x))
+        x = self.act(self.conv1(x))
         x = self.pool(x)
-        x = self.relu(self.conv2(x))
+        x = self.act(self.conv2(x))
         x = self.pool(x)
-        x = self.relu(self.conv3(x))
+        x = self.act(self.conv3(x))
         x = self.pool(x)
         
         # Flattening the tensor
         x = x.view(x.size(0), -1)
         
-        # Fully connected layers
-        x = self.relu(self.fc1(x))
+        # # Fully connected layers
+        # x = self.act(self.fc1(x))
+        # x = self.fc4(x)
+
+        # TEST Residual Network
+        x = self.act(self.fc1(x))
+        xskip = self.skip(x)
         x = self.fc2(x)
+        x = self.fc3(x)
+        x = x + xskip
+        x = self.fc4(x)
         
         return x
 

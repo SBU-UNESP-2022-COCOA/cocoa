@@ -31,8 +31,8 @@ emu_model_cs  = 'projects/lsst_y1/emulator_output/modelsTransformer/4M/model_CS'
 #emu_model_2x2 = 'projects/lsst_y1/emulator_output_3x2/modelsTransformer/model_2x2'; model_prefix = "Transformer"
 #emu_model_2x2 = 'projects/lsst_y1/emulator_output_3x2/modelsResNet/model_2x2'; model_prefix = "ResNet"
 #emu_model_2x2 = 'projects/lsst_y1/emulator_output_3x2/modelsMLP/model_2x2'; model_prefix = "MLP"
-
-emu_model_2x2 = 'projects/lsst_y1/emulator_output_3x2/modelsTransformer/2M/model_2x2'; model_prefix = "Transformer"
+emu_model_2x2 = 'projects/lsst_y1/emulator_output_3x2/modelsTransformer/2MSimple_1D_CNN/model_2x2'; model_prefix = "Simple_1D_CNN"
+#emu_model_2x2 = 'projects/lsst_y1/emulator_output_3x2/modelsTransformer/2M/model_2x2'; model_prefix = "Transformer"
 
 #emu_model_3x2 = 'projects/lsst_y1/emulator_output_3x2/models/Transformer/model_3x2'
 

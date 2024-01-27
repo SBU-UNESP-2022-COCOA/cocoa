@@ -15,13 +15,13 @@ savedir = config.savedir
 
 ### Training set
 files = ["./projects/lsst_y1/emulator_output/lhs/dvs_for_training_1M/train", #LHS
-         "./projects/lsst_y1/emulator_output/random/train_1",  #Random-1 (~800k)
+         # "./projects/lsst_y1/emulator_output/random/train_1",  #Random-1 (~800k)
          "./projects/lsst_y1/emulator_output/random/train_2", #Random-2 (1M)
-         "./projects/lsst_y1/emulator_output/random/train_3", #Random-3 (1M)
-         "./projects/lsst_y1/emulator_output/random/train_4", #Random-4 (1M)
-         "./projects/lsst_y1/emulator_output/random/train_5", #Random-5 (1M)
-         "./projects/lsst_y1/emulator_output/random/train_6", #Random-6 (1M)
-         "./projects/lsst_y1/emulator_output/random/train_7", #Random-7 (1M)
+        #  "./projects/lsst_y1/emulator_output/random/train_3", #Random-3 (1M)
+        #  "./projects/lsst_y1/emulator_output/random/train_4", #Random-4 (1M)
+        #  "./projects/lsst_y1/emulator_output/random/train_5", #Random-5 (1M)
+        #  "./projects/lsst_y1/emulator_output/random/train_6", #Random-6 (1M)
+        #  "./projects/lsst_y1/emulator_output/random/train_7", #Random-7 (1M)
         ]
 train_samples      = []
 train_data_vectors = []
@@ -43,10 +43,12 @@ validation_data_vectors = np.load('./projects/lsst_y1/emulator_output/random/dvs
 ### Select NN model
 # nn_model = "Transformer"
 # savedir = savedir+"Transformer/8M"
-nn_model = "resnet"
-savedir = savedir+"ResNet/8M"
+# nn_model = "resnet"
+# savedir = savedir+"ResNet/8M"
 # nn_model = "simply_connected"
 # savedir = savedir+"MLP/8M"
+nn_model = "Simple_1D_CNN"
+savedir = savedir+"Simple_1D_CNN/2M"
 ###
 
 print("length of samples from LHS: ", train_samples.shape)

@@ -46,18 +46,13 @@ validation_samples =      np.load('./projects/lsst_y1/emulator_output_3x2/random
 validation_data_vectors = np.load('./projects/lsst_y1/emulator_output_3x2/random/validation_data_vectors.npy').astype(np.float32)
 
 ### Select NN model
-nn_model = "Transformer_2x2pt"
-savedir = savedir+"Transformer/8M"
+# nn_model = "Transformer_2x2pt"
+# savedir = savedir+"Transformer/8M"
 # nn_model = "resnet"
 # savedir = savedir+"ResNet"
 # nn_model = "simply_connected"
 # savedir = savedir+"MLP/8M"
 ###
-
-## TEST start
-nn_model = "Simple_1D_CNN"
-savedir = savedir+"Simple_1D_CNN"
-## TEST end
 
 if debug:
     print('(debug)')

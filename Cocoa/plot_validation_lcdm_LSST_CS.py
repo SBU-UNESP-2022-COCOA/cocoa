@@ -8,6 +8,7 @@ import os
 import torch
 from cocoa_emu import Config, NNEmulator
 from cocoa_emu.sampling import EmuSampler
+from torchinfo import summary
 
 torch.set_default_dtype(torch.double)
 
@@ -36,9 +37,14 @@ samples_validation = np.load('./projects/lsst_y1/emulator_output/random/dvs_for_
 dv_validation      = np.load('./projects/lsst_y1/emulator_output/random/dvs_for_validation_5k/validation_data_vectors.npy')
 
 
-#emu_model_cs  = 'projects/lsst_y1/emulator_output/modelsTransformer/8M/model_CS'; model_prefix = "Transformer"
+# emu_model_cs  = 'projects/lsst_y1/emulator_output/modelsTransformer/8M/model_CS'; model_prefix = "Transformer"
 #emu_model_cs  = 'projects/lsst_y1/emulator_output/modelsResNet/8M/model_CS'; model_prefix = "ResNet"
 emu_model_cs  = 'projects/lsst_y1/emulator_output/modelsMLP/8M/model_CS'; model_prefix = "MLP"
+
+
+# emu_model_cs  = 'projects/lsst_y1/emulator_output/modelsTransformer/2M/model_CS'; model_prefix = "Transformer"
+# emu_model_cs  = 'projects/lsst_y1/emulator_output/modelsResNet/2M/model_CS'; model_prefix = "ResNet"
+# emu_model_cs  = 'projects/lsst_y1/emulator_output/modelsMLP/2M/model_CS'; model_prefix = "MLP"
 
 
 mask = np.loadtxt('./projects/lsst_y1/data/lsst_3x2.mask')[:,1].astype(bool)
@@ -177,6 +183,8 @@ for i in range(BIN_NUMBER):
     device='cpu'
     emu = NNEmulator(config.n_dim, BIN_SIZE, config.dv_fid, config.dv_std, cov, config.dv_fid,config.dv_fid, config.lhs_minmax ,device) #should privde dv_max instead of dv_fid, but emu.load will make it correct
     emu.load(emu_model_cs, map_location=torch.device('cpu'))
+
+    print("Model summary:", summary(emu))
     print('emulator loaded', i+1)
     tmp = []
     for j in range(len(samples_validation)):
@@ -203,7 +211,7 @@ for i in range(len(dv_predict)):
     chi2_list.append(chi2)
     if chi2>1:
         count +=1
-    if chi2>0.3:
+    if chi2>0.2:
         count2 +=1
 
 
@@ -214,9 +222,10 @@ np.savetxt('chi2_list_'+model_prefix+'.txt',chi2_list)
 
 #print("testing",chi2_list)
 print("average chi2 is: ", np.average(chi2_list))
+print("median chi2 is: ", np.median(chi2_list))
 print("Warning: This can be different from the training-validation loss. It depends on the mask file you use.")
-print("points with chi2 > 1: ", count)
-print("points with chi2 > 0.3: ", count2)
+print("fraction points with chi2 > 1: ", count / np.shape(dv_predict)[0] *100)
+print("fraction points with chi2 > 0.2: ", count2 / np.shape(dv_predict)[0] *100)
 
 
 cmap = plt.cm.get_cmap('coolwarm')
