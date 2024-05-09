@@ -10,6 +10,7 @@ from torchinfo import summary
 from .utils import *
 import random, math
 from .modules import *
+import collections
 
 class NNEmulator:
     def __init__(self, N_DIM, OUTPUT_DIM, dv_fid, dv_std, cov, dv_max, dv_mean, lhs_minmax, device, model='Transformer', optim=None):
@@ -44,12 +45,37 @@ class NNEmulator:
         self.learningrate     = 5e-4
         self.reduce_lr        = True
         self.loss_vali_goal   = 0.05
-        self.gpu_parallel     = True
+        self.gpu_parallel     = False
         self.boundary_removal = False #Force points at the boundary of the box to have chi2=0
+        self.drop_bad_result  = False # Drop the 5% points that have the largest loss
         
     
-            
+        
         if model == 'simply_connected':
+            print("Using simply connected NN...")
+            print("model output_dim: ", OUTPUT_DIM)
+            self.model = nn.Sequential(
+                                nn.Linear(N_DIM, 512),
+                                nn.ReLU(),
+                                nn.Dropout(self.dropout),
+                                nn.Linear(512, 512),
+                                nn.ReLU(),
+                                nn.Dropout(self.dropout),
+                                nn.Linear(512, 512),
+                                nn.ReLU(),
+                                nn.Dropout(self.dropout),
+                                nn.Linear(512, 512),
+                                nn.ReLU(),
+                                nn.Dropout(self.dropout),
+                                nn.Linear(512, 512), #additional laryer
+                                nn.ReLU(), #additional laryer
+                                nn.Dropout(self.dropout), #additional laryer
+                                nn.Linear(512, OUTPUT_DIM),
+                                Affine()
+                                )  
+
+        elif model == 'MLP_v2':
+            self.drop_bad_result = True
             print("Using simply connected NN...")
             print("model output_dim: ", OUTPUT_DIM)
             self.model = nn.Sequential(
@@ -319,6 +345,13 @@ class NNEmulator:
                     
                     loss = torch.mean(torch.diagonal( torch.matmul( torch.matmul((Y_batch - Y_pred),tmp_L_inv), torch.t(Y_batch - Y_pred)) )[boundary_mask] )
                     loss = torch.nan_to_num(loss) # prevent nan, should not happen with reasonable training set
+                elif self.drop_bad_result:
+                    remove_range = 0.05
+
+                    tmp = torch.diagonal(torch.matmul( torch.matmul((Y_batch - Y_pred),tmp_L_inv), torch.t(Y_batch - Y_pred)))
+                    sorted_tmp, indices = torch.sort(tmp, 0) 
+                    sorted_tmp = sorted_tmp[int(len(sorted_tmp)*remove_range):]
+                    loss = torch.mean(sorted_tmp)
                 else:
                     loss = torch.mean(torch.diagonal( torch.matmul( torch.matmul((Y_batch - Y_pred),tmp_L_inv), torch.t(Y_batch - Y_pred)) ) )
 
@@ -333,8 +366,16 @@ class NNEmulator:
                 Y_pred = self.model.eval()((tmp_X_validation - tmp_X_min)/(tmp_X_max - tmp_X_min)) * tmp_dv_std 
 
 
-            loss_vali = torch.mean(torch.diagonal( torch.matmul( torch.matmul((tmp_Y_validation - Y_pred),tmp_L_inv), torch.t(tmp_Y_validation - Y_pred)) ) )
-            #loss_vali = torch.mean(torch.abs(tmp_Y_validation - Y_pred)) * 1000000
+            if self.drop_bad_result:
+                remove_range = 0.05
+
+                tmp = torch.diagonal( torch.matmul( torch.matmul((tmp_Y_validation - Y_pred),tmp_L_inv), torch.t(tmp_Y_validation - Y_pred)) )
+                sorted_tmp, indices = torch.sort(tmp, 0) 
+                sorted_tmp = sorted_tmp[int(len(sorted_tmp)*remove_range):]
+
+                loss_vali = torch.mean(torch.diagonal( torch.matmul( torch.matmul((tmp_Y_validation - Y_pred),tmp_L_inv), torch.t(tmp_Y_validation - Y_pred)) ) )
+            else:
+                loss_vali = torch.mean(torch.diagonal( torch.matmul( torch.matmul((tmp_Y_validation - Y_pred),tmp_L_inv), torch.t(tmp_Y_validation - Y_pred)) ) )
 
             losses_vali.append(loss_vali.cpu().detach().numpy())
 
@@ -397,10 +438,21 @@ class NNEmulator:
             f['evecs_inv']     = self.evecs_inv
         
     def load(self, filename, map_location):
-        self.trained = True
-        self.model = torch.load(filename, map_location)
+        self.trained=True
+        
+        torch_loaded = torch.load(filename, map_location)
+        print(type(self.model))
+        if self.gpu_parallel: 
+            self.model= nn.DataParallel(self.model)
+        if isinstance(torch_loaded, collections.OrderedDict):
+            self.model = self.model.load_state_dict(torch_loaded)
+        else:
+            self.model = torch_loaded
+
+
+        print(type(self.model))
         ###
-        print("Model summary:", summary(self.model))
+        # print("Model summary:", summary(self.model))
         with h5.File(filename + '.h5', 'r') as f:
             self.X_mean  = torch.as_tensor(f['X_mean'][:]).float()
             self.X_std   = torch.as_tensor(f['X_std'][:]).float()
@@ -413,6 +465,26 @@ class NNEmulator:
             self.cov     = torch.as_tensor(f['cov'][:]).float()
             self.evecs   = torch.as_tensor(f['evecs'][:]).float()
             self.evecs_inv  = torch.as_tensor(f['evecs_inv'][:]).float()
+
+    def convert_parallel_saved_models(self, filename, map_location, save_dir):
+        # from https://stackoverflow.com/questions/61909973/pytorch-load-incompatiblekeys
+        # original saved file with DataParallel
+        path       = filename #+ '/test'
+        checkpoint = torch.load(path, map_location=torch.device('cpu'))
+
+        # create new OrderedDict that does not contain `module.`
+        from collections import OrderedDict
+
+        new_state_dict = OrderedDict()
+        for k, v in checkpoint.items():
+            name = k.replace("module.", "") # remove `module.`
+            new_state_dict[name] = v
+
+        # load params
+        self.model.load_state_dict(new_state_dict, strict=False)
+
+        print(type(self.model))
+        torch.save(self.model, save_dir)
 
 
 

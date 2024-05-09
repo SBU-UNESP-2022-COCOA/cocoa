@@ -9,7 +9,7 @@ from cocoa_emu import NNEmulator
 
 debug=False
 
-configfile = "./projects/lsst_y1/train_emulator_3x2.yaml"
+configfile = "./projects/lsst_y1/train_emulator_3x2_limber.yaml"
 config = Config(configfile)
 savedir = config.savedir
 
@@ -18,10 +18,20 @@ BIN_SIZE   = 780 # number of angular bins in each z-bin
 BIN_NUMBER = 2 # number of z-bins
 
 ### Training set
-files = ["./projects/lsst_y1/emulator_output_3x2/lhs/dvs_for_training_1M/train", #LHS ~1M
-         "./projects/lsst_y1/emulator_output_3x2/random/train_1",  #Random-1 (~0.7M)
-         "./projects/lsst_y1/emulator_output_3x2/random/train_2",  #Random-2 (~0.7M)
-         "./projects/lsst_y1/emulator_output_3x2/random/train_3",  #Random-3 (~0.7M)
+# files = ["./projects/lsst_y1/emulator_output_3x2/lhs/dvs_for_training_1M/train", #LHS ~1M
+#          "./projects/lsst_y1/emulator_output_3x2/random/train_1",  #Random-1 (~0.7M)
+#          "./projects/lsst_y1/emulator_output_3x2/random/train_2",  #Random-2 (~0.7M)
+#          "./projects/lsst_y1/emulator_output_3x2/random/train_3",  #Random-3 (~0.7M)
+#          #"./projects/lsst_y1/emulator_output_3x2/random/train_4", #Random-4 (~0.7M)
+#          #"./projects/lsst_y1/emulator_output_3x2/random/train_5", #Random-5 (~0.7M)
+#          #"./projects/lsst_y1/emulator_output_3x2/random/train_6", #Random-6 (~0.7M)
+#          #"./projects/lsst_y1/emulator_output_3x2/random/train_7", #Random-7 (~0.7M)
+#         ]
+
+files = ["./projects/lsst_y1/emulator_output_3x2_limber_TEST2/lhs/train_1M/train", #LHS ~1M
+         "./projects/lsst_y1/emulator_output_3x2_limber_TEST2/random/train_1",  #Random-1 (~0.8M)
+          # "./projects/lsst_y1/emulator_output_3x2_limber_TEST2/random/train_2",  #Random-2 (~0.8M)
+         # "./projects/lsst_y1/emulator_output_3x2_limber/random/train_3",  #Random-3 (~0.7M)
          #"./projects/lsst_y1/emulator_output_3x2/random/train_4", #Random-4 (~0.7M)
          #"./projects/lsst_y1/emulator_output_3x2/random/train_5", #Random-5 (~0.7M)
          #"./projects/lsst_y1/emulator_output_3x2/random/train_6", #Random-6 (~0.7M)
@@ -29,12 +39,16 @@ files = ["./projects/lsst_y1/emulator_output_3x2/lhs/dvs_for_training_1M/train",
         ]
 train_samples      = []
 train_data_vectors = []
+
+print('KZ TESTING')
 for file in files:
-    train_samples.append(np.load(file+'_samples.npy').astype(np.float32))
-    train_data_vectors.append(np.load(file+'_data_vectors.npy').astype(np.float32))
+    print('KZ TESTING 0')
+    train_samples.append(np.load(file+'_samples.npy', mmap_mode='c').astype(np.float32))
+    train_data_vectors.append(np.load(file+'_data_vectors.npy', mmap_mode='c').astype(np.float32))
+print('KZ TESTING')
 train_samples = np.vstack(train_samples)
 train_data_vectors = np.vstack(train_data_vectors)
-
+print('KZ TESTING')
 # TEST begin
 train_samples      = train_samples[0:2000000]
 train_data_vectors = train_data_vectors[0:2000000]
@@ -42,16 +56,16 @@ train_data_vectors = train_data_vectors[0:2000000]
 
 ### Validation set
 # Random
-validation_samples =      np.load('./projects/lsst_y1/emulator_output_3x2/random/validation_samples.npy').astype(np.float32)
-validation_data_vectors = np.load('./projects/lsst_y1/emulator_output_3x2/random/validation_data_vectors.npy').astype(np.float32)
+validation_samples =      np.load('./projects/lsst_y1/emulator_output_3x2_limber_TEST2/random/valid_samples.npy').astype(np.float32)
+validation_data_vectors = np.load('./projects/lsst_y1/emulator_output_3x2_limber_TEST2/random/valid_data_vectors.npy').astype(np.float32)
 
 ### Select NN model
 # nn_model = "Transformer_2x2pt"
-# savedir = savedir+"Transformer/8M"
-# nn_model = "resnet"
-# savedir = savedir+"ResNet"
+# savedir = savedir+"Transformer/2M"
+nn_model = "resnet"
+savedir = savedir+"ResNet/2M"
 # nn_model = "simply_connected"
-# savedir = savedir+"MLP/8M"
+# savedir = savedir+"MLP/2M"
 ###
 
 if debug:

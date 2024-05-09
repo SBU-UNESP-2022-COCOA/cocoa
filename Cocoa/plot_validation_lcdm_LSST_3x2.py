@@ -23,15 +23,15 @@ INPUT_DIM_CS = 13  # input dim of cosmic shear, excluding for example dz_lens an
 cut_boundary = False
 
 configfile              = './projects/lsst_y1/train_emulator_3x2.yaml'
-samples_validation_file = './projects/lsst_y1/emulator_output_3x2/random/validation_samples.npy'
-dv_validation_file      = './projects/lsst_y1/emulator_output_3x2/random/validation_data_vectors.npy'
+samples_validation_file = './projects/lsst_y1/emulator_output_3x2_limber_TEST2/random/valid_samples.npy'
+dv_validation_file      = './projects/lsst_y1/emulator_output_3x2_limber_TEST2/random/valid_data_vectors.npy'
 
-emu_model_cs  = 'projects/lsst_y1/emulator_output/modelsTransformer/4M/model_CS'
+emu_model_cs  = 'projects/lsst_y1/emulator_output/modelsTransformer/8M/model_CS'
 
-#emu_model_2x2 = 'projects/lsst_y1/emulator_output_3x2/modelsTransformer/model_2x2'; model_prefix = "Transformer"
-#emu_model_2x2 = 'projects/lsst_y1/emulator_output_3x2/modelsResNet/model_2x2'; model_prefix = "ResNet"
-#emu_model_2x2 = 'projects/lsst_y1/emulator_output_3x2/modelsMLP/model_2x2'; model_prefix = "MLP"
-emu_model_2x2 = 'projects/lsst_y1/emulator_output_3x2/modelsTransformer/2MSimple_1D_CNN/model_2x2'; model_prefix = "Simple_1D_CNN"
+emu_model_2x2 = 'projects/lsst_y1/emulator_output_3x2_limber_TEST2/modelsTransformer/2M/model_2x2'; model_prefix = "Transformer"; nn_model="Transformer_2x2pt"
+# emu_model_2x2 = 'projects/lsst_y1/emulator_output_3x2_limber_TEST2/modelsResNet/2M/model_2x2'; model_prefix = "ResNet"; nn_model="resnet" 
+#emu_model_2x2 = 'projects/lsst_y1/emulator_output_3x2_limber_TEST2/modelsMLP/2M/model_2x2'; model_prefix = "MLP"; nn_model="simply_connected"
+#emu_model_2x2 = 'projects/lsst_y1/emulator_output_3x2/modelsTransformer/2MSimple_1D_CNN/model_2x2'; model_prefix = "Simple_1D_CNN"
 #emu_model_2x2 = 'projects/lsst_y1/emulator_output_3x2/modelsTransformer/2M/model_2x2'; model_prefix = "Transformer"
 
 #emu_model_3x2 = 'projects/lsst_y1/emulator_output_3x2/models/Transformer/model_3x2'
@@ -164,14 +164,16 @@ bin_count = 0
 start_idx = 0
 end_idx   = 0
 
+print("KZ testing", config.n_dim)
+
 ########################################
 print("validating 3x2pt with seperating cosmic shear and 2x2")
 for i in range(2):
     device='cpu'
-    emu = NNEmulator(config.n_dim, BIN_SIZE, config.dv_fid, config.dv_std, cov, config.dv_fid,config.dv_fid, config.lhs_minmax ,device) #should privde dv_max instead of dv_fid, but emu.load will make it correct
+    emu = NNEmulator(config.n_dim, BIN_SIZE, config.dv_fid, config.dv_std, cov, config.dv_fid,config.dv_fid, config.lhs_minmax ,device, nn_model) #should privde dv_max instead of dv_fid, but emu.load will make it correct
     if i ==0:
         print("using emulator of cosmic shear part")
-        emu.load(emu_model_cs, map_location=torch.device('cpu'))
+        emu.load(emu_model_cs, map_location=torch.device(device))
         print('emulator loaded cosmic shear')
         tmp = []
         for j in range(len(samples_validation)):
@@ -183,7 +185,7 @@ for i in range(2):
         dv_predict = tmp
     elif i==1:
         print("using emulator of 2x2 part")
-        emu.load(emu_model_2x2, map_location=torch.device('cpu'))
+        emu.load(emu_model_2x2, map_location=torch.device(device))
         print('emulator loaded 2x2pt')
         tmp = []
         for j in range(len(samples_validation)):

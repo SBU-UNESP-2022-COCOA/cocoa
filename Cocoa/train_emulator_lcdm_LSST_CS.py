@@ -45,10 +45,10 @@ validation_data_vectors = np.load('./projects/lsst_y1/emulator_output/random/dvs
 # savedir = savedir+"Transformer/8M"
 # nn_model = "resnet"
 # savedir = savedir+"ResNet/8M"
-# nn_model = "simply_connected"
-# savedir = savedir+"MLP/8M"
-nn_model = "Simple_1D_CNN"
-savedir = savedir+"Simple_1D_CNN/2M"
+nn_model = "MLP_v2"
+savedir = savedir+"MLP/2M"
+# nn_model = "Simple_1D_CNN"
+# savedir = savedir+"Simple_1D_CNN/2M"
 ###
 
 print("length of samples from LHS: ", train_samples.shape)

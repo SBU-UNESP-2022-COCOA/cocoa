@@ -54,9 +54,10 @@ class nautilus(Sampler):
         self.n_likes = len(self.model.likelihood)
         self.nDims = self.model.prior.d()
         self.sampled_params_names = list(self.model.parameterization.sampled_params().keys())
-        if self.n_derived>0:
-            raise LoggedError(
-                self.log, "Does Not support derived parameters YET")
+        # KZ 2024.5.7: let me test this: seems I can still call emulators to run these chains
+        # if self.n_derived>0:
+        #     raise LoggedError(
+        #         self.log, "Does Not support derived parameters YET")
 
         # Import additional modules for parallel computing if requested
         self.pool = None
@@ -87,7 +88,7 @@ class nautilus(Sampler):
         nautilus_prior = nautilus_Prior()
         for name in self.sampled_params_names:
             prior = params_info[name]['prior']
-            if ('dist' in prior):
+            if ('dist' in prior and prior['dist']=='norm'):
                 nautilus_prior.add_parameter(name, dist=norm(loc=prior['loc'], scale=prior['scale']))
             else:
                 nautilus_prior.add_parameter(name, dist=(prior['min'], prior['max']))
@@ -97,7 +98,7 @@ class nautilus(Sampler):
             params_values = [param_dict[name] for name in self.sampled_params_names]
             result = self.model.logposterior(params_values)
             loglikes = result.loglikes
-            return np.squeeze(loglikes)
+            return np.squeeze(loglikes).sum()
 
 
         if self.parallel.get("kind") == "multiprocessing":
@@ -115,6 +116,53 @@ class nautilus(Sampler):
                 sampler.run(verbose=True)
                 end   =time.time()
                 print("run time = ", end-start)
+        # TESTING: shared memory multiprocessing
+        elif self.parallel.get("kind") == "SMP":
+            self.mpi_info("KZ: using shared memory multiprocessing")
+            if self.parallel.get("args").get("threads") == -1:
+                num_cores = int(os.environ.get("SLURM_CPUS_PER_TASK", 1))
+            else:
+                num_cores = self.parallel.get("args").get("threads")
+            sampler = nautilus_Sampler(nautilus_prior, loglikelihood, n_live=self.n_live, pool=num_cores)
+            t_start = time.time()
+            sampler.run(verbose=True)
+            t_end = time.time()
+            print('Total time: {:.1f}s'.format(t_end - t_start))
+        elif self.parallel.get("kind") == "schwimmbad":
+            #KZ: Not working as desired
+            from schwimmbad import MPIPool
+            #KZ: TODO
+            pool = MPIPool()
+            if not pool.is_master():
+                pool.wait()
+                sys.exit(0)
+            sampler = nautilus_Sampler(nautilus_prior, loglikelihood, n_live=self.n_live, pool=pool)
+            t_start = time.time()
+            sampler.run(verbose=True)
+            t_end = time.time()
+            print('Total time: {:.1f}s'.format(t_end - t_start))
+
+        elif self.parallel.get("kind") == "concurrent":
+            self.mpi_info("KZ: testing concurrent")
+            from concurrent.futures import ThreadPoolExecutor
+            if self.parallel.get("args").get("threads") == -1:
+                num_cores = int(os.environ.get("SLURM_CPUS_PER_TASK", 1))
+            else:
+                num_cores = self.parallel.get("args").get("threads")
+            with ThreadPoolExecutor(max_workers=num_cores) as executor:
+                print('kz testing')
+                sampler = nautilus_Sampler(nautilus_prior, loglikelihood, pass_dict=False, n_live=self.n_live, pool=executor)
+                start =time.time()
+                sampler.run(verbose=True)
+                end   =time.time()
+        else:
+            print('KZ testing')
+            sampler = nautilus_Sampler(nautilus_prior, loglikelihood, n_live=self.n_live)
+            start =time.time()
+            sampler.run(verbose=True)
+            end   =time.time()
+            print("run time = ", end-start)
+
         if is_main_process():
             self.save_raw(np.array([sampler.evidence()]))
             points, log_w, log_l = sampler.posterior(equal_weight=self.is_equal_weights)

@@ -39,7 +39,7 @@ dv_validation      = np.load('./projects/lsst_y1/emulator_output/random/dvs_for_
 
 # emu_model_cs  = 'projects/lsst_y1/emulator_output/modelsTransformer/8M/model_CS'; model_prefix = "Transformer"
 #emu_model_cs  = 'projects/lsst_y1/emulator_output/modelsResNet/8M/model_CS'; model_prefix = "ResNet"
-emu_model_cs  = 'projects/lsst_y1/emulator_output/modelsMLP/8M/model_CS'; model_prefix = "MLP"
+emu_model_cs  = 'projects/lsst_y1/emulator_output/modelsMLP/2M/model_CS'; model_prefix = "MLP"
 
 
 # emu_model_cs  = 'projects/lsst_y1/emulator_output/modelsTransformer/2M/model_CS'; model_prefix = "Transformer"
@@ -179,12 +179,14 @@ bin_count = 0
 start_idx = 0
 end_idx   = 0
 
+print("KZ testing", config.n_dim)
+
 for i in range(BIN_NUMBER):
     device='cpu'
     emu = NNEmulator(config.n_dim, BIN_SIZE, config.dv_fid, config.dv_std, cov, config.dv_fid,config.dv_fid, config.lhs_minmax ,device) #should privde dv_max instead of dv_fid, but emu.load will make it correct
     emu.load(emu_model_cs, map_location=torch.device('cpu'))
 
-    print("Model summary:", summary(emu))
+    # print("Model summary:", summary(emu))
     print('emulator loaded', i+1)
     tmp = []
     for j in range(len(samples_validation)):
