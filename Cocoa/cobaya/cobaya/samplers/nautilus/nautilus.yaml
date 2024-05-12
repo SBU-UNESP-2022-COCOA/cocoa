@@ -1,8 +1,7 @@
-n_live: 1000
+n_live: 4000
 
 parallel:
-  kind: multiprocessing
-  args:
-    threads: 3
+  kind: cobaya_mpi
+  n_batch: 400 
 
 is_equal_weights: True

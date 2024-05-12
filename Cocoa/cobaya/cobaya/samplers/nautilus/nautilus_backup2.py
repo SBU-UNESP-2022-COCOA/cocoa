@@ -17,9 +17,13 @@ from itertools import chain
 from typing import Any, Callable, Optional
 from tempfile import gettempdir
 import re
-#nautlilus
+# modified verion, see src
 from .nautilus_src.nautilus import Sampler as nautilus_Sampler
 from .nautilus_src.nautilus import Prior as nautilus_Prior
+# old version
+from nautilus import Sampler as nautilus_Sampler
+from nautilus import Prior as nautilus_Prior
+
 from scipy.stats import norm, multivariate_normal
 import yaml
 import time
@@ -97,7 +101,7 @@ class nautilus(Sampler):
             params_values = [param_dict[name] for name in self.sampled_params_names]
             result = self.model.logposterior(params_values)
             loglikes = result.loglikes
-            # time.sleep(0.5) # KZ TESTING, make it slower to mimic camb calculations
+            time.sleep(0.5) # KZ TESTING, make it slower to mimic camb calculations
             return np.squeeze(loglikes).sum()
 
 
