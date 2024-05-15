@@ -23,6 +23,7 @@ from .nautilus_src.nautilus import Prior as nautilus_Prior
 from scipy.stats import norm, multivariate_normal
 import yaml
 import time
+import pandas as pd
 
 # Local
 from cobaya.tools import read_dnumber, get_external_function, \
@@ -97,7 +98,6 @@ class nautilus(Sampler):
             params_values = [param_dict[name] for name in self.sampled_params_names]
             result = self.model.logposterior(params_values)
             loglikes = result.loglikes
-            # time.sleep(0.5) # KZ TESTING, make it slower to mimic camb calculations
             return np.squeeze(loglikes).sum()
 
 
@@ -105,11 +105,11 @@ class nautilus(Sampler):
         if self.parallel.get("kind") == "cobaya_mpi":
             print("Running Nautilus with cobaya-MPI")
             n_batch = min(self.n_live, self.parallel.get("n_batch"))
-            sampler = nautilus_Sampler(nautilus_prior, loglikelihood, n_live=self.n_live, pool=None, split_threshold=n_batch, n_batch=n_batch, cobaya_mpi=True)
+            sampler = nautilus_Sampler(nautilus_prior, loglikelihood, n_live=self.n_live, pool=None, split_threshold=100, n_batch=n_batch, cobaya_mpi=True)
             start =time.time()
             sampler.run(verbose=True)
             end   =time.time()
-            # print("run time = ", end-start)
+            print("run time = ", end-start)
         # KZ: MPI run end
         else:
             # KZ: you can still run nautilus without any parallization, but would be slow
@@ -120,10 +120,60 @@ class nautilus(Sampler):
             print("run time = ", end-start)
 
         # same as cobaya manner
+        # KZ NOTE: The sampler doesn't save logL seperately. Let me just use cobaya's collection class to make a template and save manually
         if is_main_process():
             self.save_raw(np.array([sampler.evidence()]))
             points, log_w, log_l = sampler.posterior(equal_weight=self.is_equal_weights)
-            self.save_sample(points, log_w, log_l, "1")
+            self.mpi_info("Saving posteriors, number of points is {}".format(len(points)))
+            
+            # save some points and output .1.txt as a example
+            self.save_sample(points[0:1], log_w[0:1], log_l[0:1], "1tmp")
+            
+            # manual save from here:
+            outfile_tmp = self.base_dir + '.1tmp.txt'
+            outfile_cleaned = self.base_dir + '.1.txt'
+
+            f = open(outfile_tmp, 'r')
+            header = f.readline().split()
+            tmp1 = f.readline().split() # read one line, remove nan
+            
+            header_cleaned = []
+
+            # clear up nans
+            for i in range(len(tmp1)):
+                if tmp1[i] !='nan':
+                    header_cleaned.append(header[1+i]) # there's a # in front
+
+            # clear up last chi2 and minuslogprior__0
+            header_cleaned.remove('minuslogprior__0')
+            for i in range(1, len(header_cleaned)):
+                if header_cleaned[-i] !='chi2':
+                    header_cleaned.pop(-i)
+                    break
+
+            delimiter = '         '  # Single space as delimiter
+            header_cleaned = delimiter.join(header_cleaned)
+
+            data_to_output = np.zeros([len(points), len(points[0]) + 4]) # weight, logPosterior, logPrior, chi2
+            if self.is_equal_weights:
+                data_to_output[:, 0] = 1.0 # weight
+            else:
+                data_to_output[:, 0] = np.exp(log_w) # weight
+
+            # get logPior
+            logpriors=np.zeros(len(log_l))
+            logpriors=np.array([self.model.logposterior(points[i]).logpriors[0] for i in range(len(log_l))])
+
+            data_to_output[:, 1]  = - log_l - logpriors# minuslogpost
+            data_to_output[:, 2: 2+len(points[0])] = points # sample points
+            data_to_output[:, -1] = -2. * log_l # chi2
+            data_to_output[:, -2] = - logpriors # minus log prior
+
+            # assert len(header_cleaned.split())== len(data_to_output[0]), 'something wrong'
+            
+            np.savetxt(outfile_cleaned,data_to_output, header = header_cleaned, fmt='%f')
+            
+            
             self.mpi_info("nautilus finished")
         return
         # KZ: MPI RUN end
